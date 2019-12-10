@@ -1,0 +1,13 @@
+[workspace]
+resolver = "2"
+members = ["compilers/*"]
+default-members = [
+    "compilers/itools-core",
+]
+exclude = [
+    "compilers/.DS_Store",
+]
+
+[profile.release]
+lto = true
+panic = "abort"
