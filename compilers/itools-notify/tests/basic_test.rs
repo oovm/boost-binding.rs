@@ -14,7 +14,7 @@ fn test_basic_monitoring() {
     let mut watcher = new_watcher().unwrap();
 
     // 开始监控临时目录
-    watcher.watch(temp_path, true).unwrap();
+    watcher.watch(temp_path.to_path_buf(), true).unwrap();
 
     // 创建测试文件
     let test_file = temp_path.join("test.txt");
@@ -51,7 +51,7 @@ fn test_event_filtering() {
     watcher.add_filter(Box::new(filter));
 
     // 开始监控临时目录
-    watcher.watch(temp_path, true).unwrap();
+    watcher.watch(temp_path.to_path_buf(), true).unwrap();
 
     // 创建测试文件
     let test_file = temp_path.join("test.txt");

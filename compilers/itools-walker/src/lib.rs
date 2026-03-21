@@ -147,7 +147,7 @@ impl Walker {
     pub async fn walk<P: AsRef<Path>>(
         &self,
         path: P,
-    ) -> Result<impl Stream<Item = Result<WalkEntry, WalkError>> + use<P>, WalkError> {
+    ) -> Result<impl Stream<Item = Result<WalkEntry, WalkError>> + Unpin + use<P>, WalkError> {
         let path = path.as_ref().to_path_buf();
         let (tx, rx) = mpsc::channel(self.options.channel_size.get() as usize);
 
@@ -163,7 +163,7 @@ impl Walker {
             rx.recv().await.map(|item| (item, rx))
         });
 
-        Ok(stream)
+        Ok(Box::pin(stream))
     }
 
     /// 递归遍历目录

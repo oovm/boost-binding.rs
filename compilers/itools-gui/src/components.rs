@@ -4,6 +4,7 @@
 
 use crate::style::Style;
 use serde::{Deserialize, Serialize};
+use oak_json::{JsonValueNode, ast::{JsonObject, JsonString}};
 
 /// 组件类型
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -63,11 +64,11 @@ pub struct ComponentProperties {
     /// 最大值
     pub max: Option<f32>,
     /// 当前值
-    pub value: Option<serde_json::Value>,
+    pub value: Option<JsonValueNode>,
     /// 选项列表
     pub options: Option<Vec<(String, String)>>,
     /// 自定义属性
-    pub custom: serde_json::Value,
+    pub custom: JsonValueNode,
 }
 
 impl ComponentProperties {
@@ -85,7 +86,7 @@ impl ComponentProperties {
             max: None,
             value: None,
             options: None,
-            custom: serde_json::Value::Object(serde_json::Map::new()),
+            custom: JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }),
         }
     }
 }
@@ -171,7 +172,7 @@ impl Component {
     ///
     /// # 参数
     /// - `value`: 值
-    pub fn set_value(&mut self, value: serde_json::Value) {
+    pub fn set_value(&mut self, value: JsonValueNode) {
         self.properties.value = Some(value);
     }
 
@@ -281,7 +282,7 @@ pub fn create_label(id: &str, text: &str, style: Style) -> Component {
 /// 文本框组件实例
 pub fn create_text_box(id: &str, value: &str, style: Style) -> Component {
     let mut properties = ComponentProperties::default();
-    properties.value = Some(serde_json::Value::String(value.to_string()));
+    properties.value = Some(JsonValueNode::String(JsonString { value: value.to_string(), span: (0..0).into() }));
     Component::new(ComponentType::TextBox, id, style, properties)
 }
 

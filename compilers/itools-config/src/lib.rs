@@ -1,12 +1,12 @@
 #![warn(missing_docs)]
 
 //! iTools 配置解析模块
-//!
+//! 
 //! 提供基于 fragment 的配置解析功能，支持将配置文件分割成多个片段进行管理和加载。
 
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
-use std::{env, error::Error, fs, path::Path};
+use oak_json::{JsonValueNode, ast::{JsonObject, JsonField, JsonString, JsonBoolean, JsonNumber}};
+use std::{collections::HashMap, env, error::Error, fs, path::Path};
 use tracing::info;
 
 /// 国际化功能 - 使用 itools-localization 模块的国际化实现
@@ -62,7 +62,7 @@ impl Parse for bool {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ConfigFragment {
     /// 配置数据
-    pub data: Value,
+    pub data: JsonValueNode,
     /// 优先级
     pub priority: u32,
 }
@@ -73,13 +73,13 @@ pub struct ConfigManager {
     /// 配置片段
     fragments: Vec<ConfigFragment>,
     /// 合并后的配置
-    merged_config: Value,
+    merged_config: JsonValueNode,
 }
 
 impl ConfigManager {
     /// 创建新的配置管理器
     pub fn new() -> Self {
-        Self { fragments: Vec::new(), merged_config: Value::Object(Map::new()) }
+        Self { fragments: Vec::new(), merged_config: JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }) }
     }
 
     /// 加载配置片段
@@ -135,12 +135,12 @@ impl ConfigManager {
     }
 
     /// 验证配置
-    pub fn validate_config(&self, config: &Value) -> Result<(), Box<dyn Error>> {
+    pub fn validate_config(&self, config: &JsonValueNode) -> Result<(), Box<dyn Error>> {
         // 这里可以添加配置验证逻辑
         // 例如：检查必需的配置项、验证配置值的类型和范围等
 
         // 示例：检查是否存在必需的配置项
-        if let Value::Object(_map) = config {
+        if let oak_json::JsonValueNode::Object(_map) = config {
             // 这里可以添加具体的验证逻辑
         }
 
@@ -182,7 +182,7 @@ impl ConfigManager {
         self.fragments.sort_by(|a, b| a.priority.cmp(&b.priority));
 
         // 初始化合并后的配置
-        self.merged_config = Value::Object(Map::new());
+        self.merged_config = JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
 
         // 合并所有配置片段
         for fragment in &self.fragments {
@@ -191,26 +191,48 @@ impl ConfigManager {
     }
 
     /// 合并两个值
-    fn merge_values(&self, target: Value, source: Value) -> Value {
+    fn merge_values(&self, target: JsonValueNode, source: JsonValueNode) -> JsonValueNode {
         match (target, source) {
-            (Value::Object(mut target_map), Value::Object(source_map)) => {
-                for (key, source_value) in source_map {
-                    if target_map.contains_key(&key) {
-                        let target_value = target_map.remove(&key).unwrap();
-                        target_map.insert(key, self.merge_values(target_value, source_value));
+            (JsonValueNode::Object(target_obj), JsonValueNode::Object(source_obj)) => {
+                // 构建target字段的HashMap以便快速查找
+                let mut target_fields: HashMap<String, JsonValueNode> = target_obj.fields.into_iter()
+                    .map(|field| (field.name.value, field.value))
+                    .collect();
+                
+                // 处理source对象的所有字段
+                for source_field in source_obj.fields {
+                    let key = source_field.name.value;
+                    let source_value = source_field.value;
+                    
+                    if target_fields.contains_key(&key) {
+                        let target_value = target_fields.remove(&key).unwrap();
+                        target_fields.insert(key, self.merge_values(target_value, source_value));
                     }
                     else {
-                        target_map.insert(key, source_value);
+                        target_fields.insert(key, source_value);
                     }
                 }
-                serde_json::Value::Object(target_map)
+                
+                // 将HashMap转换回Vec<JsonField>
+                let mut fields: Vec<JsonField> = target_fields.into_iter()
+                    .map(|(k, v)| JsonField {
+                        name: JsonString { value: k, span: (0..0).into() },
+                        value: v,
+                        span: (0..0).into()
+                    })
+                    .collect();
+                
+                // 按字段名排序以保持一致性
+                fields.sort_by(|a, b| a.name.value.cmp(&b.name.value));
+                
+                JsonValueNode::Object(JsonObject { fields, span: (0..0).into() })
             }
             (_, source) => source, // 其他类型直接替换
         }
     }
 
     /// 获取合并后的配置
-    pub fn get_config(&self) -> &serde_json::Value {
+    pub fn get_config(&self) -> &JsonValueNode {
         &self.merged_config
     }
 
@@ -241,7 +263,7 @@ impl ConfigManager {
     }
 
     /// 添加默认配置值
-    pub fn add_defaults(&mut self, defaults: serde_json::Value) {
+    pub fn add_defaults(&mut self, defaults: JsonValueNode) {
         let fragment = ConfigFragment { data: defaults, priority: 0 };
         self.fragments.push(fragment);
         self.merge_configs();
@@ -260,15 +282,51 @@ impl ConfigManager {
                 *current = self.parse_value(value);
             }
             else {
-                // 创建嵌套对象
-                if !current.is_object() {
-                    *current = serde_json::Value::Object(serde_json::Map::new());
+                // 确保当前是对象
+                if !matches!(current, JsonValueNode::Object(_)) {
+                    *current = JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
                 }
-                let current_map = current.as_object_mut().unwrap();
-                if !current_map.contains_key(*key) {
-                    current_map.insert(key.to_string(), serde_json::Value::Object(serde_json::Map::new()));
+                
+                // 查找或创建字段
+                match current {
+                    JsonValueNode::Object(current_obj) => {
+                        // 先检查是否存在该字段
+                        let field_index = current_obj.fields.iter()
+                            .position(|field| field.name.value == *key);
+                        
+                        if let Some(index) = field_index {
+                            // 确保字段值是对象
+                            if !matches!(&current_obj.fields[index].value, JsonValueNode::Object(_)) {
+                                current_obj.fields[index].value = JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
+                            }
+                            current = &mut current_obj.fields[index].value;
+                        }
+                        else {
+                            // 创建新字段
+                            current_obj.fields.push(JsonField {
+                                name: JsonString { value: key.to_string(), span: (0..0).into() },
+                                value: JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }),
+                                span: (0..0).into()
+                            });
+                            // 找到刚添加的字段并设置current
+                            current = &mut current_obj.fields.last_mut().unwrap().value;
+                        }
+                    }
+                    _ => {
+                        // 不应该发生，因为上面已经确保是对象
+                        *current = JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
+                        if let JsonValueNode::Object(current_obj) = current {
+                            // 创建新字段
+                            current_obj.fields.push(JsonField {
+                                name: JsonString { value: key.to_string(), span: (0..0).into() },
+                                value: JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }),
+                                span: (0..0).into()
+                            });
+                            // 找到刚添加的字段并设置current
+                            current = &mut current_obj.fields.last_mut().unwrap().value;
+                        }
+                    }
                 }
-                current = current_map.get_mut(*key).unwrap();
             }
         }
 
@@ -276,22 +334,22 @@ impl ConfigManager {
     }
 
     /// 解析值
-    fn parse_value(&self, value: &str) -> serde_json::Value {
+    fn parse_value(&self, value: &str) -> JsonValueNode {
         // 尝试解析为不同类型
         if value == "true" {
-            serde_json::Value::Bool(true)
+            JsonValueNode::Boolean(JsonBoolean { value: true, span: (0..0).into() })
         }
         else if value == "false" {
-            serde_json::Value::Bool(false)
+            JsonValueNode::Boolean(JsonBoolean { value: false, span: (0..0).into() })
         }
         else if let Ok(num) = value.parse::<i64>() {
-            serde_json::Value::Number(serde_json::Number::from(num))
+            JsonValueNode::Number(JsonNumber { value: num as f64, span: (0..0).into() })
         }
         else if let Ok(num) = value.parse::<f64>() {
-            serde_json::Value::Number(serde_json::Number::from_f64(num).unwrap())
+            JsonValueNode::Number(JsonNumber { value: num, span: (0..0).into() })
         }
         else {
-            serde_json::Value::String(value.to_string())
+            JsonValueNode::String(JsonString { value: value.to_string(), span: (0..0).into() })
         }
     }
 }

@@ -1,12 +1,13 @@
 use futures::stream::StreamExt;
 use itools_walker::{WalkOptions, Walker};
+use std::num::NonZeroU32;
 
 #[tokio::test]
 async fn test_stream_walk() {
     let walker = Walker::new().unwrap();
 
     // Test streaming walk of the current directory
-    let mut stream = walker.walk_stream(".").await.unwrap();
+    let mut stream = walker.walk(".").await.unwrap();
 
     let mut count = 0;
     // Collect some entries to verify the stream works
@@ -16,7 +17,7 @@ async fn test_stream_walk() {
                 count += 1;
                 // At least one entry should be found (the current directory itself)
                 if count == 1 {
-                    assert!(walk_entry.is_dir);
+                    assert!(walk_entry.is_dir());
                     assert_eq!(walk_entry.path.file_name().unwrap_or_default(), std::ffi::OsStr::new("."));
                 }
             }
@@ -36,13 +37,12 @@ async fn test_stream_walk_with_options() {
     let options = WalkOptions {
         recursive: false, // Only walk the current directory
         follow_symlinks: false,
-        include_patterns: Vec::new(),
-        exclude_patterns: Vec::new(),
-        concurrency_limit: Some(10),
+        channel_size: NonZeroU32::new(64).unwrap(),
+        concurrency_limit: NonZeroU32::new(10).unwrap(),
     };
 
     let walker = Walker::with_options(options).unwrap();
-    let mut stream = walker.walk_stream(".").await.unwrap();
+    let mut stream = walker.walk(".").await.unwrap();
 
     let mut count = 0;
     while let Some(entry) = stream.next().await {
@@ -61,13 +61,12 @@ async fn test_stream_walk_concurrency() {
     let options = WalkOptions {
         recursive: true,
         follow_symlinks: false,
-        include_patterns: Vec::new(),
-        exclude_patterns: Vec::new(),
-        concurrency_limit: Some(5), // Set a lower concurrency limit for testing
+        channel_size: NonZeroU32::new(64).unwrap(),
+        concurrency_limit: NonZeroU32::new(5).unwrap(), // Set a lower concurrency limit for testing
     };
 
     let walker = Walker::with_options(options).unwrap();
-    let mut stream = walker.walk_stream(".").await.unwrap();
+    let mut stream = walker.walk(".").await.unwrap();
 
     let mut count = 0;
     while let Some(entry) = stream.next().await {

@@ -3,6 +3,7 @@
 //! 提供 GUI 事件系统，包括事件定义、分发和处理。
 
 use serde::{Deserialize, Serialize};
+use oak_json::JsonValueNode;
 
 /// 事件类型
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -201,7 +202,7 @@ pub enum EventData {
     /// 窗口事件数据
     Window(WindowEvent),
     /// 自定义事件数据
-    Custom(serde_json::Value),
+    Custom(JsonValueNode),
 }
 
 /// 事件处理器

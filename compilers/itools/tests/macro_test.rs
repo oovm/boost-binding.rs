@@ -10,6 +10,6 @@ fn test_translation_macros() {
     assert_eq!(hello, "hello"); // 未加载资源，回退到键
 
     // 测试带参数的翻译
-    let greeting = t!("greeting", &[("name", "World")]);
+    let greeting = t!(("greeting", &[("name", "World")]));
     assert_eq!(greeting, "greeting"); // 未加载资源，回退到键
 }
