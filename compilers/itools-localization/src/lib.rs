@@ -1,11 +1,31 @@
 #![warn(missing_docs)]
 
 //! iTools 国际化支持模块
-//!
+//! 
 //! 提供完整的国际化功能，包括翻译管理、语言切换和参数化翻译。
 
 use std::{collections::HashMap, path::Path};
 use tracing::info;
+
+/// 国际化错误类型
+#[derive(Debug, thiserror::Error)]
+pub enum I18nError {
+    /// 文件读取错误
+    #[error("Failed to read file: {0}")]
+    FileRead(#[from] std::io::Error),
+    /// 解析错误
+    #[error("Failed to parse content: {0}")]
+    ParseError(String),
+    /// 不支持的文件格式
+    #[error("Unsupported file format: {0}")]
+    UnsupportedFormat(String),
+    /// 特性未启用
+    #[error("Feature not enabled: {0}")]
+    FeatureNotEnabled(String),
+    /// 翻译未找到
+    #[error("Translation not found: {0}")]
+    TranslationNotFound(String),
+}
 
 // 导入 oak-fluent 库
 use oak_fluent::{Translator as OakFluentTranslatorCore, parse};
@@ -18,7 +38,7 @@ pub trait TranslationProvider {
         key: &str,
         args: Option<&HashMap<String, String>>,
         locale: &str,
-    ) -> Result<String, Box<dyn std::error::Error>>;
+    ) -> Result<String, I18nError>;
 
     /// 获取当前语言
     fn get_locale(&self) -> &str;
@@ -60,7 +80,7 @@ impl TranslationProvider for SimpleTranslator {
         key: &str,
         args: Option<&HashMap<String, String>>,
         locale: &str,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<String, I18nError> {
         // 查找翻译
         let translation = self
             .translations
@@ -123,7 +143,7 @@ impl OakFluentTranslator {
     }
 
     /// 从文件加载翻译
-    pub fn add_translations_from_file(&mut self, locale: &str, file_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn add_translations_from_file(&mut self, locale: &str, file_path: &Path) -> Result<(), I18nError> {
         let content = std::fs::read_to_string(file_path)?;
         
         // 根据文件扩展名选择解析器
@@ -132,42 +152,46 @@ impl OakFluentTranslator {
             Some("json") => {
                 #[cfg(feature = "json")]
                 {
-                    let translations: HashMap<String, String> = oak_json::from_str(&content)?;
+                    let translations: HashMap<String, String> = oak_json::from_str(&content)
+                        .map_err(|e| I18nError::ParseError(e.to_string()))?;
                     self.add_simple_translations(locale, translations)
                 }
                 #[cfg(not(feature = "json"))]
                 {
-                    Err("JSON feature is not enabled".into())
+                    Err(I18nError::FeatureNotEnabled("json".to_string()))
                 }
             }
             Some("toml") => {
                 #[cfg(feature = "toml")]
                 {
-                    let translations: HashMap<String, String> = oak_toml::from_str(&content)?;
+                    let translations: HashMap<String, String> = oak_toml::from_str(&content)
+                        .map_err(|e| I18nError::ParseError(e.to_string()))?;
                     self.add_simple_translations(locale, translations)
                 }
                 #[cfg(not(feature = "toml"))]
                 {
-                    Err("TOML feature is not enabled".into())
+                    Err(I18nError::FeatureNotEnabled("toml".to_string()))
                 }
             }
             Some("yaml") | Some("yml") => {
                 #[cfg(feature = "yaml")]
                 {
-                    let translations: HashMap<String, String> = oak_yaml::from_str(&content)?;
+                    let translations: HashMap<String, String> = oak_yaml::from_str(&content)
+                        .map_err(|e| I18nError::ParseError(e.to_string()))?;
                     self.add_simple_translations(locale, translations)
                 }
                 #[cfg(not(feature = "yaml"))]
                 {
-                    Err("YAML feature is not enabled".into())
+                    Err(I18nError::FeatureNotEnabled("yaml".to_string()))
                 }
             }
-            _ => Err("Unsupported file format".into()),
+            Some(ext) => Err(I18nError::UnsupportedFormat(ext.to_string())),
+            None => Err(I18nError::UnsupportedFormat("unknown".to_string())),
         }
     }
 
     /// 添加简单翻译（从 HashMap 加载）
-    pub fn add_simple_translations(&mut self, locale: &str, translations: HashMap<String, String>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn add_simple_translations(&mut self, locale: &str, translations: HashMap<String, String>) -> Result<(), I18nError> {
         // 这里我们需要将 HashMap 转换为 Fluent 格式，或者添加对简单键值对的支持
         // 为了简单起见，我们暂时将其添加到 SimpleTranslator 中
         // 后续可以考虑更复杂的实现
@@ -187,14 +211,14 @@ impl OakFluentTranslator {
     }
 
     /// 从字符串加载翻译
-    pub fn add_translations_from_string(&mut self, locale: &str, ftl_content: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn add_translations_from_string(&mut self, locale: &str, ftl_content: &str) -> Result<(), I18nError> {
         match parse(ftl_content) {
             Ok(root) => {
                 let translator = OakFluentTranslatorCore::new(root);
                 self.translators.insert(locale.to_string(), translator);
                 Ok(())
             }
-            Err(err) => Err(format!("Failed to parse FTL content: {:?}", err).into()),
+            Err(err) => Err(I18nError::ParseError(format!("{:?}", err))),
         }
     }
 }
@@ -205,7 +229,7 @@ impl TranslationProvider for OakFluentTranslator {
         key: &str,
         args: Option<&HashMap<String, String>>,
         locale: &str,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<String, I18nError> {
         // 尝试从当前语言获取翻译
         if let Some(translator) = self.translators.get(locale) {
             if let Some(translation) = translator.translate(key, &args.unwrap_or(&HashMap::new())) {
@@ -320,7 +344,13 @@ impl I18nContext {
         }
 
         // 翻译
-        let result = self.translator.translate(key, args, locale).unwrap_or_else(|_| key.to_string());
+        let result = match self.translator.translate(key, args, locale) {
+            Ok(translation) => translation,
+            Err(e) => {
+                tracing::debug!("Translation error: {}, falling back to key", e);
+                key.to_string()
+            }
+        };
 
         // 缓存结果
         self.translation_cache.put(cache_key, result.clone());
