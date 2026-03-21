@@ -5,7 +5,7 @@ authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
 homepage = { workspace = true }
-repository = { workspace = true }
+repository = "https://github.com/oovm/iTools/tree/dev/compilers/itools-config"
 description = "Configuration management for iTools"
 
 
@@ -17,7 +17,22 @@ itools-macros = { workspace = true }
 itools-localization = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
-toml = { workspace = true }
-
+oak-json = { workspace = true, optional = true }
+oak-toml = { workspace = true, optional = true }
+oak-yaml = { workspace = true, optional = true }
 lazy_static = { workspace = true }
+
+[features]
+default = ["json", "toml", "yaml"]
+json = ["oak-json"]
+toml = ["oak-toml"]
+yaml = ["oak-yaml"]
+
+[dev-dependencies]
+assert_matches = "1.5"
+criterion = "0.5"
+figment = { version = "0.10", features = ["json", "toml", "yaml"] }
+
+[[bench]]
+name = "merge_benchmark"
+harness = false

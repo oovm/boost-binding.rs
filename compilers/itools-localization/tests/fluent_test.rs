@@ -1,23 +1,40 @@
-use fluent_bundle::{FluentArgs, FluentBundle, FluentResource};
-use unic_langid::langid;
+use oak_fluent::{Translator, ast::{FluentRoot, FluentMessage, FluentPattern, FluentPatternElement}};
 
 #[test]
-fn test_fluent_bundle_parse() {
-    // 测试基本 FTL 解析
-    let ftl = "hello = Hello world!";
+fn test_oak_fluent_translator() {
+    // 手动创建 FluentRoot 实例
+    let root = FluentRoot {
+        messages: vec![
+            FluentMessage {
+                id: "hello".to_string(),
+                value: Some(FluentPattern {
+                    elements: vec![
+                        FluentPatternElement::Text("Hello world!".to_string()),
+                    ],
+                }),
+                attributes: vec![],
+                variants: vec![],
+            },
+        ],
+    };
 
-    match FluentResource::try_new(ftl.to_string()) {
-        Ok(resource) => {
-            println!("Parsed successfully: {:?}", resource);
+    // 创建翻译器
+    let translator = Translator::new(root);
+
+    // 测试翻译
+    let args = std::collections::HashMap::new();
+    match translator.translate("hello", &args) {
+        Some(translation) => {
+            println!("Translation: {}", translation);
+            assert_eq!(translation, "Hello world!");
         }
-        Err((_, errors)) => {
-            println!("Parse error: {:?}", errors);
-            panic!("Failed to parse FTL content: {:?}", errors);
+        None => {
+            panic!("Failed to translate 'hello'");
         }
     }
 }
 
 #[test]
-fn test_fluent_bundle_version() {
-    println!("Fluent bundle version: {}", env!("CARGO_PKG_VERSION"));
+fn test_oak_fluent_version() {
+    println!("Oak Fluent version: {}", env!("CARGO_PKG_VERSION"));
 }

@@ -1,6 +1,6 @@
 # itools-notify - 实现计划
 
-## [ ] Task 1: 创建 itools-notify 包目录结构
+## [x] Task 1: 创建 itools-notify 包目录结构
 - **优先级**：P0
 - **依赖**：None
 - **描述**：
@@ -13,7 +13,7 @@
   - `programmatic` TR-1.2: Cargo.toml 配置正确
 - **备注**：参考其他 itools 包的目录结构和配置
 
-## [ ] Task 2: 定义核心 API 接口
+## [x] Task 2: 定义核心 API 接口
 - **优先级**：P0
 - **依赖**：Task 1
 - **描述**：
@@ -26,7 +26,7 @@
   - `human-judgment` TR-2.2: API 设计简洁易用
 - **备注**：参考其他文件系统通知库的 API 设计，但保持简洁
 
-## [ ] Task 3: 实现 Windows 平台的文件系统监控
+## [x] Task 3: 实现 Windows 平台的文件系统监控
 - **优先级**：P0
 - **依赖**：Task 2
 - **描述**：
@@ -39,7 +39,7 @@
   - `programmatic` TR-3.2: 事件处理延迟不超过 100ms
 - **备注**：使用 Windows 的 ReadDirectoryChangesW API
 
-## [ ] Task 4: 实现 Linux 平台的文件系统监控
+## [x] Task 4: 实现 Linux 平台的文件系统监控
 - **优先级**：P0
 - **依赖**：Task 2
 - **描述**：
@@ -52,7 +52,7 @@
   - `programmatic` TR-4.2: 事件处理延迟不超过 100ms
 - **备注**：使用 Rust 标准库的 std::os::linux::fs 模块
 
-## [ ] Task 5: 实现 macOS 平台的文件系统监控
+## [x] Task 5: 实现 macOS 平台的文件系统监控
 - **优先级**：P0
 - **依赖**：Task 2
 - **描述**：
@@ -65,7 +65,7 @@
   - `programmatic` TR-5.2: 事件处理延迟不超过 100ms
 - **备注**：使用 Rust 标准库的 std::os::macos::fs 模块
 
-## [ ] Task 6: 实现跨平台的统一接口
+## [x] Task 6: 实现跨平台的统一接口
 - **优先级**：P0
 - **依赖**：Task 3, Task 4, Task 5
 - **描述**：
@@ -78,7 +78,7 @@
   - `programmatic` TR-6.2: 能够正确处理平台差异
 - **备注**：使用条件编译和 trait 对象实现平台抽象
 
-## [ ] Task 7: 实现事件过滤机制
+## [x] Task 7: 实现事件过滤机制
 - **优先级**：P1
 - **依赖**：Task 6
 - **描述**：
@@ -91,7 +91,7 @@
   - `programmatic` TR-7.2: 过滤后事件处理性能提升
 - **备注**：考虑使用正则表达式或 glob 模式进行路径过滤
 
-## [ ] Task 8: 编写测试用例
+## [x] Task 8: 编写测试用例
 - **优先级**：P1
 - **依赖**：Task 6
 - **描述**：
@@ -104,7 +104,7 @@
   - `programmatic` TR-8.2: 性能测试结果符合要求
 - **备注**：测试用例应覆盖各种事件类型和平台场景
 
-## [ ] Task 9: 编写文档
+## [x] Task 9: 编写文档
 - **优先级**：P2
 - **依赖**：Task 6
 - **描述**：
@@ -117,7 +117,7 @@
   - `human-judgment` TR-9.2: 示例代码能够正常运行
 - **备注**：使用 Rust 的文档注释和 Markdown 格式
 
-## [ ] Task 10: 集成到 itools 生态系统
+## [x] Task 10: 集成到 itools 生态系统
 - **优先级**：P2
 - **依赖**：Task 6, Task 8
 - **描述**：

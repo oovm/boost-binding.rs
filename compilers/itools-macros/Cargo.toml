@@ -5,7 +5,7 @@ authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
 homepage = { workspace = true }
-repository = { workspace = true }
+repository = "https://github.com/oovm/iTools/tree/dev/compilers/itools-macros"
 description = "Proc macros for iTools, including command and error generation"
 
 

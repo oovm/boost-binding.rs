@@ -3,9 +3,9 @@ name = "itools-notify"
 version = "0.1.0"
 edition = "2021"
 description = "自研的文件系统变更通知库，不依赖外部 C 库"
-homepage = "https://github.com/yourusername/itools"
-repository = "https://github.com/yourusername/itools"
-license = "MIT"
+homepage = { workspace = true }
+repository = "https://github.com/oovm/iTools/tree/dev/compilers/itools-notify"
+license = { workspace = true }
 
 [dependencies]
 
@@ -14,3 +14,6 @@ winapi = { version = "0.3", features = ["fileapi", "winbase", "winerror", "handl
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+[dev-dependencies]
+tempfile = "3.6"

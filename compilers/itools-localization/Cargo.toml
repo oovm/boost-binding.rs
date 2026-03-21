@@ -4,15 +4,11 @@ version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 description = "Internationalization support for iTools"
-homepage = "https://itools.dev"
-repository = "https://github.com/itools-dev/itools"
+homepage = { workspace = true }
+repository = "https://github.com/oovm/iTools/tree/dev/compilers/itools-localization"
 license = { workspace = true }
 
 [dependencies]
-fluent = { workspace = true }
-fluent-syntax = { workspace = true }
-fluent-bundle = { workspace = true }
-unic-langid = { workspace = true }
 lazy_static = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
@@ -20,11 +16,18 @@ serde_json = { workspace = true }
 lru = { workspace = true }
 
 # Oak Fluent support
-oak-fluent = { workspace = true, optional = true }
+oak-fluent = { workspace = true }
+
+# Oak parsers support
+oak-json = { workspace = true, optional = true }
+oak-toml = { workspace = true, optional = true }
+oak-yaml = { workspace = true, optional = true }
 
 [features]
-default = []
-oak-fluent = ["dep:oak-fluent"]
+default = ["json", "toml", "yaml"]
+json = ["oak-json"]
+toml = ["oak-toml"]
+yaml = ["oak-yaml"]
 
 [dev-dependencies]
 assert_matches = "1.5"

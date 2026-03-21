@@ -1,19 +1,19 @@
 # iTools Walker
 
-Asynchronous directory traversal library with concurrent processing and glob pattern support.
+🚶 iTools Walker 是 iTools 项目的异步目录遍历库，提供并发处理和 glob 模式支持。
 
-## Features
+## 特性
 
-- **Asynchronous**: Built on Tokio for non-blocking I/O operations
-- **Concurrent**: Parallel directory traversal with configurable concurrency limits
-- **Glob Pattern Support**: Includes and excludes files using glob patterns (like .gitignore)
-- **Flexible API**: Easy-to-use interface with both callback-based and stream-based methods
-- **Symbolic Link Support**: Optional symbolic link following
-- **Recursive Traversal**: Configurable recursive directory traversal
+- ✨ 异步：基于 Tokio 构建，支持非阻塞 I/O 操作
+- ✨ 并发：支持并行目录遍历，可配置并发限制
+- ✨ Glob 模式支持：使用 glob 模式包含和排除文件（如 .gitignore）
+- ✨ 灵活的 API：提供回调式和流式两种使用方法
+- ✨ 符号链接支持：可选的符号链接跟随
+- ✨ 递归遍历：可配置的递归目录遍历
 
-## Usage Examples
+## 使用方法
 
-### Basic Async Traversal with Stream
+### 基本异步遍历（流式）
 
 ```rust
 use itools_walker::Walker;
@@ -21,13 +21,13 @@ use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a walker with default options
+    // 创建默认选项的遍历器
     let walker = Walker::new()?;
     
-    // Walk the current directory asynchronously (returns a stream)
+    // 异步遍历当前目录（返回流）
     let mut stream = walker.walk(".").await?;
     
-    // Process the results stream
+    // 处理结果流
     while let Some(entry) = stream.next().await {
         match entry {
             Ok(walk_entry) => println!("{:?} - dir: {}, file: {}, symlink: {}", 
@@ -40,22 +40,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-### Concurrent Traversal with Concurrency Limit
+### 带并发限制的遍历
 
 ```rust
 use itools_walker::{Walker, WalkOptions};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create options with concurrency limit
+    // 创建带并发限制的选项
     let options = WalkOptions {
-        concurrency_limit: Some(5), // Limit to 5 concurrent operations
+        concurrency_limit: Some(5), // 限制为 5 个并发操作
         ..Default::default()
     };
     
     let walker = Walker::with_options(options)?;
     
-    // Walk with callback (more memory efficient for large directories)
+    // 使用回调遍历（对大型目录更内存高效）
     walker.walk_with(".", |entry| {
         println!("Processing: {:?}", entry.path);
         Ok(())
@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-### Glob Pattern Support
+### Glob 模式支持
 
 ```rust
 use itools_walker::{Walker, WalkOptions};
@@ -73,10 +73,10 @@ use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create options with glob patterns
+    // 创建带 glob 模式的选项
     let options = WalkOptions {
-        include_patterns: vec!["**/*.rs", "**/*.toml"], // Include Rust and TOML files
-        exclude_patterns: vec!["target/**", ".git/**"], // Exclude target and .git directories
+        include_patterns: vec!["**/*.rs", "**/*.toml"], // 包含 Rust 和 TOML 文件
+        exclude_patterns: vec!["target/**", ".git/**"], // 排除 target 和 .git 目录
         ..Default::default()
     };
     
@@ -98,7 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-### Walk with Convenient Functions
+### 使用便捷函数
 
 ```rust
 use itools_walker::{walk, walk_with_options, WalkOptions};
@@ -106,7 +106,7 @@ use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Use the convenient function with default options
+    // 使用默认选项的便捷函数
     let mut stream = walk(".").await?;
     let mut count = 0;
     
@@ -117,7 +117,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     println!("Found {} entries", count);
     
-    // Create options with glob patterns
+    // 创建带 glob 模式的选项
     let options = WalkOptions {
         include_patterns: vec!["**/*.rs"],
         exclude_patterns: vec!["target/**"],
@@ -125,7 +125,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
     
-    // Use the convenient function with custom options
+    // 使用自定义选项的便捷函数
     let mut rust_stream = walk_with_options(".", options).await?;
     let mut rust_count = 0;
     
@@ -143,30 +143,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Performance Benefits
+## 注意事项
 
-- **Non-blocking**: Uses Tokio's async I/O for efficient directory traversal
-- **Parallel Processing**: Concurrent traversal speeds up processing of large directory structures
-- **Memory Efficient**: Stream-based API allows processing entries as they are found
-- **Flexible**: Configurable concurrency limits to balance performance and system resources
-
-## Use Cases
-
-- **File System Analysis**: Quickly scan large directory structures
-- **Build Tools**: Efficiently find and process source files
-- **Static Site Generators**: Traverse content directories with pattern matching
-- **Dependency Scanners**: Identify files matching specific patterns
-- **Backup Utilities**: Select files for backup based on glob patterns
-
-## Why Choose itools-walker?
-
-- **Modern Async Design**: Built with Tokio for optimal performance
-- **Concurrent Processing**: Parallel traversal for faster results
-- **Glob Pattern Support**: Powerful filtering capabilities
-- **Flexible API**: Choose between stream-based or callback-based approaches
-- **Reliable**: Handles errors gracefully and provides clear error messages
-- **Well Documented**: Comprehensive documentation and examples
-
-## License
-
-AGPL-3.0
+- 流式 API 适合处理大型目录结构，内存使用更高效
+- 并发限制应根据系统资源进行调整，避免过度消耗系统资源
+- glob 模式支持标准的 glob 语法，如 `**` 表示递归匹配
+- 符号链接跟随可能导致循环，使用时需谨慎
+- 错误处理应妥善处理，避免因单个文件错误导致整个遍历过程失败

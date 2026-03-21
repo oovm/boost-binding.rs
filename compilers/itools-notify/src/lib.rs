@@ -17,6 +17,68 @@ pub enum FileSystemEvent {
     Rename(PathBuf, PathBuf),
 }
 
+/// 文件系统事件过滤器
+pub trait EventFilter {
+    /// 检查事件是否应该被过滤
+    /// 
+    /// # 参数
+    /// * `event` - 要检查的文件系统事件
+    /// 
+    /// # 返回值
+    /// * `true` - 事件应该被过滤
+    /// * `false` - 事件应该被保留
+    fn should_filter(&self, event: &FileSystemEvent) -> bool;
+}
+
+/// 简单的路径过滤器
+#[derive(Debug, Clone)]
+pub struct PathFilter {
+    include_patterns: Vec<String>,
+    exclude_patterns: Vec<String>,
+}
+
+impl PathFilter {
+    /// 创建新的路径过滤器
+    pub fn new(include_patterns: Vec<String>, exclude_patterns: Vec<String>) -> Self {
+        Self {
+            include_patterns,
+            exclude_patterns,
+        }
+    }
+}
+
+impl EventFilter for PathFilter {
+    fn should_filter(&self, event: &FileSystemEvent) -> bool {
+        let path = match event {
+            FileSystemEvent::Create(path) => path,
+            FileSystemEvent::Modify(path) => path,
+            FileSystemEvent::Delete(path) => path,
+            FileSystemEvent::Rename(_, path) => path,
+        };
+        
+        let path_str = path.to_string_lossy();
+        
+        // 检查是否在排除列表中
+        for pattern in &self.exclude_patterns {
+            if path_str.contains(pattern) {
+                return true;
+            }
+        }
+        
+        // 检查是否在包含列表中
+        if !self.include_patterns.is_empty() {
+            for pattern in &self.include_patterns {
+                if path_str.contains(pattern) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        false
+    }
+}
+
 /// 文件系统监控器 trait
 pub trait Watcher {
     /// 错误类型
@@ -31,7 +93,7 @@ pub trait Watcher {
     /// # 返回值
     /// * `Ok(())` - 监控成功
     /// * `Err(Self::Error)` - 监控失败
-    fn watch<P: Into<PathBuf>>(&mut self, path: P, recursive: bool) -> Result<(), Self::Error>;
+    fn watch(&mut self, path: PathBuf, recursive: bool) -> Result<(), Self::Error>;
     
     /// 停止监控指定路径
     /// 
@@ -41,7 +103,16 @@ pub trait Watcher {
     /// # 返回值
     /// * `Ok(())` - 停止监控成功
     /// * `Err(Self::Error)` - 停止监控失败
-    fn unwatch<P: Into<PathBuf>>(&mut self, path: P) -> Result<(), Self::Error>;
+    fn unwatch(&mut self, path: PathBuf) -> Result<(), Self::Error>;
+    
+    /// 添加事件过滤器
+    /// 
+    /// # 参数
+    /// * `filter` - 要添加的事件过滤器
+    fn add_filter(&mut self, filter: Box<dyn EventFilter>);
+    
+    /// 移除所有事件过滤器
+    fn clear_filters(&mut self);
     
     /// 接收下一个文件系统事件
     /// 
@@ -59,15 +130,24 @@ pub trait Watcher {
 pub fn new_watcher() -> Result<Box<dyn Watcher<Error = Box<dyn std::error::Error>>>, String> {
     #[cfg(windows)]
     {
-        Ok(Box::new(crate::platform::windows::WindowsWatcher::new()?))
+        match crate::platform::windows::WindowsWatcher::new() {
+            Ok(watcher) => Ok(Box::new(watcher)),
+            Err(e) => Err(e.to_string()),
+        }
     }
     #[cfg(target_os = "linux")]
     {
-        Ok(Box::new(crate::platform::linux::LinuxWatcher::new()?))
+        match crate::platform::linux::LinuxWatcher::new() {
+            Ok(watcher) => Ok(Box::new(watcher)),
+            Err(e) => Err(e.to_string()),
+        }
     }
     #[cfg(target_os = "macos")]
     {
-        Ok(Box::new(crate::platform::macos::MacOSWatcher::new()?))
+        match crate::platform::macos::MacOSWatcher::new() {
+            Ok(watcher) => Ok(Box::new(watcher)),
+            Err(e) => Err(e.to_string()),
+        }
     }
     #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     {

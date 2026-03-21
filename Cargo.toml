@@ -1,10 +1,20 @@
 [workspace]
 resolver = "2"
 members = [
-    "compilers/*",
+    "compilers/itools",
+    "compilers/itools-core",
+    "compilers/itools-macros",
+    "compilers/itools-config",
+    "compilers/itools-walker",
+    "compilers/itools-localization",
 ]
 default-members = [
-    "compilers/*",
+    "compilers/itools",
+    "compilers/itools-core",
+    "compilers/itools-macros",
+    "compilers/itools-config",
+    "compilers/itools-walker",
+    "compilers/itools-localization",
 ]
 [workspace.package]
 version = "0.0.0"

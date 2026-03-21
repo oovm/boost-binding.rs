@@ -14,7 +14,7 @@ extern crate itools_macros;
 pub use itools_localization::{get_locale, set_locale, t, t_with_args};
 
 /// 导出翻译宏
-pub use itools_macros::{t, t_with_args};
+pub use itools_macros::t;
 
 /// 命令行参数解析 trait
 pub trait Parse {

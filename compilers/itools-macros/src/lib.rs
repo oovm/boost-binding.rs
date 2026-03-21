@@ -365,74 +365,61 @@ fn get_error_message(attrs: &[Attribute]) -> proc_macro2::TokenStream {
 
 /// 翻译宏
 ///
-/// 用于获取翻译，替代 `t` 函数。
+/// 用于获取翻译，支持重载：
+/// - `t!("key")` - 基本翻译
+/// - `t!("key", &[("name", "value")])` - 带参数的翻译
 ///
 /// # 示例
 /// ```rust
+/// // 基本翻译
 /// let greeting = t!("hello");
+///
+/// // 带参数的翻译
+/// let greeting = t!("greeting", &[("name", "World")]);
 /// ```
 #[proc_macro]
 pub fn t(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as syn::LitStr);
-    let key = input.value();
-    
-    // 简单的编译时检查：确保键不为空
-    if key.is_empty() {
-        let error: proc_macro2::TokenStream = parse_quote! {
-            compile_error!("t! macro expects a non-empty string literal as translation key");
-        };
-        return error.into();
-    }
-    
-    let expanded = quote! {
-        {
-            let mut i18n = itools::I18N.lock().unwrap();
-            i18n.t(#input)
-        }
-    };
-    
-    expanded.into()
-}
-
-/// 带参数的翻译宏
-///
-/// 用于获取带参数的翻译，替代 `t_with_args` 函数。
-///
-/// # 示例
-/// ```rust
-/// let greeting = t_with_args!("greeting", [("name", "World")]);
-/// ```
-#[proc_macro]
-pub fn t_with_args(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as syn::ExprTuple);
-    
-    if input.elems.len() != 2 {
-        let error: proc_macro2::TokenStream = parse_quote! {
-            compile_error!("t_with_args! macro expects exactly two arguments: key and args");
-        };
-        return error.into();
-    }
-    
-    // 确保第一个参数是字符串字面量
-    let key = match &input.elems[0] {
-        syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(_), .. }) => &input.elems[0],
-        _ => {
+    // 尝试解析为单个字符串字面量（基本翻译）
+    if let Ok(lit_str) = syn::parse::<syn::LitStr>(input.clone()) {
+        let key = lit_str.value();
+        
+        // 简单的编译时检查：确保键不为空
+        if key.is_empty() {
             let error: proc_macro2::TokenStream = parse_quote! {
-                compile_error!("t_with_args! macro expects a string literal as translation key");
+                compile_error!("t! macro expects a non-empty string literal as translation key");
             };
             return error.into();
         }
-    };
+        
+        let expanded = quote! {
+            itools_localization::t(#lit_str)
+        };
+        
+        return expanded.into();
+    }
     
-    let args = &input.elems[1];
-    
-    let expanded = quote! {
-        {
-            let mut i18n = itools::I18N.lock().unwrap();
-            let args_map: std::collections::HashMap<String, String> = #args.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
-            i18n.t_with_args(#key, Some(&args_map))
+    // 尝试解析为元组（带参数的翻译）
+    if let Ok(expr_tuple) = syn::parse::<syn::ExprTuple>(input) {
+        if expr_tuple.elems.len() != 2 {
+            let error: proc_macro2::TokenStream = parse_quote! {
+                compile_error!("t! macro expects either one argument (key) or two arguments (key, args)");
+            };
+            return error.into();
         }
-    };
+        
+        let key = &expr_tuple.elems[0];
+        let args = &expr_tuple.elems[1];
+        
+        let expanded = quote! {
+            itools_localization::t_with_args(#key, #args)
+        };
+        
+        return expanded.into();
+    }
     
-    expanded.into()
+    // 解析失败
+    let error: proc_macro2::TokenStream = parse_quote! {
+        compile_error!("t! macro expects either a string literal or a tuple of (string literal, args)");
+    };
+    error.into()
 }

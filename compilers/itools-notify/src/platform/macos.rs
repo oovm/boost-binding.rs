@@ -10,6 +10,7 @@ use crate::{FileSystemEvent, Watcher};
 pub struct MacOSWatcher {
     event_receiver: mpsc::Receiver<FileSystemEvent>,
     watch_paths: Vec<PathBuf>,
+    filters: Vec<Box<dyn crate::EventFilter>>,
 }
 
 impl MacOSWatcher {
@@ -17,15 +18,10 @@ impl MacOSWatcher {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let (event_sender, event_receiver) = mpsc::channel();
         
-        // 启动监控线程
-        thread::spawn(move || {
-            // 这里将实现具体的监控逻辑
-            // 暂时空实现
-        });
-        
         Ok(Self {
             event_receiver,
             watch_paths: Vec::new(),
+            filters: Vec::new(),
         })
     }
 }
@@ -38,6 +34,7 @@ impl Watcher for MacOSWatcher {
         self.watch_paths.push(path.clone());
         
         // 这里将实现具体的监控逻辑
+        // 暂时简化实现
         Ok(())
     }
     
@@ -45,4 +42,35 @@ impl Watcher for MacOSWatcher {
         let path = path.into();
         self.watch_paths.retain(|p| p != &path);
         
-        //
+        // 这里将实现具体的停止监控逻辑
+        Ok(())
+    }
+    
+    fn add_filter(&mut self, filter: Box<dyn crate::EventFilter>) {
+        self.filters.push(filter);
+    }
+    
+    fn clear_filters(&mut self) {
+        self.filters.clear();
+    }
+    
+    fn next_event(&mut self) -> Result<Option<FileSystemEvent>, Self::Error> {
+        // 从通道接收事件
+        while let Ok(event) = self.event_receiver.recv() {
+            // 应用过滤器
+            let mut filtered = false;
+            for filter in &self.filters {
+                if filter.should_filter(&event) {
+                    filtered = true;
+                    break;
+                }
+            }
+            
+            if !filtered {
+                return Ok(Some(event));
+            }
+        }
+        
+        Ok(None)
+    }
+}

@@ -15,6 +15,7 @@ pub struct LinuxWatcher {
     event_receiver: mpsc::Receiver<FileSystemEvent>,
     watch_paths: Vec<PathBuf>,
     inotify_fd: Option<i32>,
+    filters: Vec<Box<dyn crate::EventFilter>>,
 }
 
 impl LinuxWatcher {
@@ -39,7 +40,35 @@ impl LinuxWatcher {
                     break;
                 }
                 
-                // 这里将实现具体的事件处理逻辑
+                // 处理事件
+                let mut offset = 0;
+                while offset < bytes_read as usize {
+                    let event = unsafe { &*(buffer.as_ptr().add(offset) as *const libc::inotify_event) };
+                    let name_length = event.len as usize;
+                    
+                    if name_length > 0 {
+                        let name = unsafe {
+                            std::ffi::OsString::from_vec(buffer[offset + std::mem::size_of::<libc::inotify_event>()..offset + std::mem::size_of::<libc::inotify_event>() + name_length].to_vec())
+                        };
+                        // 这里需要根据 watch descriptor 找到对应的路径
+                        // 暂时简化处理
+                        let path = PathBuf::from(name);
+                        
+                        if event.mask & IN_CREATE != 0 {
+                            event_sender.send(FileSystemEvent::Create(path)).ok();
+                        } else if event.mask & IN_DELETE != 0 {
+                            event_sender.send(FileSystemEvent::Delete(path)).ok();
+                        } else if event.mask & IN_MODIFY != 0 {
+                            event_sender.send(FileSystemEvent::Modify(path)).ok();
+                        } else if event.mask & IN_MOVED_FROM != 0 {
+                            // 暂存旧名称，等待新名称
+                        } else if event.mask & IN_MOVED_TO != 0 {
+                            // 处理重命名事件
+                        }
+                    }
+                    
+                    offset += std::mem::size_of::<libc::inotify_event>() + name_length;
+                }
             }
         });
         
@@ -47,6 +76,7 @@ impl LinuxWatcher {
             event_receiver,
             watch_paths: Vec::new(),
             inotify_fd: Some(inotify_fd),
+            filters: Vec::new(),
         })
     }
 }
@@ -80,9 +110,32 @@ impl Watcher for LinuxWatcher {
         Ok(())
     }
     
+    fn add_filter(&mut self, filter: Box<dyn crate::EventFilter>) {
+        self.filters.push(filter);
+    }
+    
+    fn clear_filters(&mut self) {
+        self.filters.clear();
+    }
+    
     fn next_event(&mut self) -> Result<Option<FileSystemEvent>, Self::Error> {
         // 从通道接收事件
-        Ok(self.event_receiver.recv().ok())
+        while let Ok(event) = self.event_receiver.recv() {
+            // 应用过滤器
+            let mut filtered = false;
+            for filter in &self.filters {
+                if filter.should_filter(&event) {
+                    filtered = true;
+                    break;
+                }
+            }
+            
+            if !filtered {
+                return Ok(Some(event));
+            }
+        }
+        
+        Ok(None)
     }
 }
 

@@ -89,14 +89,35 @@ impl ConfigManager {
             .map_err(|_e| format!("{}", t_with_args("errors.config_not_found", &[("path", &path.to_string_lossy())])))?;
 
         let data = match path.extension().and_then(|ext| ext.to_str()) {
-            Some("json") => serde_json::from_str(&content)?,
+            Some("json") => {
+                #[cfg(feature = "json")]
+                {
+                    oak_json::from_str(&content)?
+                }
+                #[cfg(not(feature = "json"))]
+                {
+                    return Err("JSON feature is not enabled".into());
+                }
+            }
             Some("toml") => {
-                let toml_value: toml::Value = toml::from_str(&content)?;
-                serde_json::to_value(toml_value)?
+                #[cfg(feature = "toml")]
+                {
+                    oak_toml::from_str(&content)?
+                }
+                #[cfg(not(feature = "toml"))]
+                {
+                    return Err("TOML feature is not enabled".into());
+                }
             }
             Some("yaml") | Some("yml") => {
-                let yaml_value: serde_yaml::Value = serde_yaml::from_str(&content)?;
-                serde_json::to_value(yaml_value)?
+                #[cfg(feature = "yaml")]
+                {
+                    oak_yaml::from_str(&content)?
+                }
+                #[cfg(not(feature = "yaml"))]
+                {
+                    return Err("YAML feature is not enabled".into());
+                }
             }
             _ => return Err("Unsupported config file format".into()),
         };

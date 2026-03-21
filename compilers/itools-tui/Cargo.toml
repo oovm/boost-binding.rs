@@ -4,6 +4,8 @@ version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
+homepage = { workspace = true }
+repository = "https://github.com/oovm/iTools/tree/dev/compilers/itools-tui"
 readme = "readme.md"
 description = "iTools TUI module"
 

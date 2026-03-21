@@ -184,6 +184,7 @@ impl Walker {
         let metadata =
             if self.options.follow_symlinks { fs::metadata(path).await? } else { fs::symlink_metadata(path).await? };
 
+        let is_dir = metadata.is_dir();
         let entry = WalkEntry { path: path.to_path_buf(), metadata };
 
         if tx.send(Ok(entry)).await.is_err() {
@@ -237,6 +238,7 @@ impl Walker {
         let metadata =
             if self.options.follow_symlinks { fs::metadata(path).await? } else { fs::symlink_metadata(path).await? };
 
+        let is_dir = metadata.is_dir();
         let entry = WalkEntry { path: path.to_path_buf(), metadata };
 
         callback(&entry)?;

@@ -4,8 +4,8 @@ version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 description = "Core functionality for iTools, including error handling and utilities"
-homepage = "https://itools.dev"
-repository = "https://github.com/itools-dev/itools"
+homepage = { workspace = true }
+repository = "https://github.com/oovm/iTools/tree/dev/compilers/itools-core"
 license = { workspace = true }
 
 [dependencies]

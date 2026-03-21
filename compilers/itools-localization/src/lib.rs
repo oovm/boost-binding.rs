@@ -8,7 +8,6 @@ use std::{collections::HashMap, path::Path};
 use tracing::info;
 
 // 导入 oak-fluent 库
-#[cfg(feature = "oak-fluent")]
 use oak_fluent::{Translator as OakFluentTranslatorCore, parse};
 
 /// 翻译提供者 trait
@@ -104,139 +103,15 @@ impl TranslationProvider for SimpleTranslator {
     }
 }
 
-/// Fluent 翻译提供者
-pub struct FluentTranslator {
-    bundles: HashMap<String, fluent_bundle::FluentBundle<fluent_bundle::FluentResource>>,
-    current_locale: String,
-    default_locale: String,
-}
 
-impl FluentTranslator {
-    /// 创建新的 Fluent 翻译提供者
-    pub fn new(current_locale: &str, default_locale: &str) -> Self {
-        Self { bundles: HashMap::new(), current_locale: current_locale.to_string(), default_locale: default_locale.to_string() }
-    }
-
-    /// 从文件加载翻译
-    pub fn add_translations_from_file(&mut self, locale: &str, file_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-        let content = std::fs::read_to_string(file_path)?;
-        self.add_translations_from_string(locale, &content)
-    }
-
-    /// 从字符串加载翻译
-    pub fn add_translations_from_string(&mut self, locale: &str, ftl_content: &str) -> Result<(), Box<dyn std::error::Error>> {
-        match fluent_bundle::FluentResource::try_new(ftl_content.to_string()) {
-            Ok(resource) => {
-                let langid = match locale {
-                    "zh-CN" => unic_langid::langid!("zh-CN"),
-                    "en" => unic_langid::langid!("en"),
-                    _ => unic_langid::langid!("en"),
-                };
-
-                let mut bundle = fluent_bundle::FluentBundle::new(vec![langid]);
-                match bundle.add_resource(resource) {
-                    Ok(_) => {
-                        self.bundles.insert(locale.to_string(), bundle);
-                        Ok(())
-                    }
-                    Err(errors) => Err(format!("Failed to add resource: {:?}", errors).into()),
-                }
-            }
-            Err((_, errors)) => Err(format!("Failed to parse FTL content: {:?}", errors).into()),
-        }
-    }
-}
-
-impl TranslationProvider for FluentTranslator {
-    fn translate(
-        &self,
-        key: &str,
-        args: Option<&HashMap<String, String>>,
-        locale: &str,
-    ) -> Result<String, Box<dyn std::error::Error>> {
-        // 尝试从当前语言获取翻译
-        if let Some(bundle) = self.bundles.get(locale) {
-            if let Some(message) = bundle.get_message(key) {
-                if let Some(value) = message.value() {
-                    let mut errors = vec![];
-                    let result = if let Some(args) = args {
-                        let mut fluent_args = fluent_bundle::FluentArgs::new();
-                        for (name, value) in args {
-                            fluent_args.set(name, fluent_bundle::FluentValue::from(value));
-                        }
-                        bundle.format_pattern(value, Some(&fluent_args), &mut errors)
-                    }
-                    else {
-                        bundle.format_pattern(value, None, &mut errors)
-                    };
-                    return Ok(result.to_string());
-                }
-            }
-        }
-
-        // 回退到默认语言
-        if locale != self.default_locale {
-            if let Some(bundle) = self.bundles.get(&self.default_locale) {
-                if let Some(message) = bundle.get_message(key) {
-                    if let Some(value) = message.value() {
-                        let mut errors = vec![];
-                        let result = if let Some(args) = args {
-                            let mut fluent_args = fluent_bundle::FluentArgs::new();
-                            for (name, value) in args {
-                                fluent_args.set(name, fluent_bundle::FluentValue::from(value));
-                            }
-                            bundle.format_pattern(value, Some(&fluent_args), &mut errors)
-                        }
-                        else {
-                            bundle.format_pattern(value, None, &mut errors)
-                        };
-                        return Ok(result.to_string());
-                    }
-                }
-            }
-        }
-
-        // 回退到键本身
-        Ok(key.to_string())
-    }
-
-    fn get_locale(&self) -> &str {
-        &self.current_locale
-    }
-
-    fn set_locale(&mut self, locale: &str) {
-        self.current_locale = locale.to_string();
-    }
-
-    fn clone_box(&self) -> Box<dyn TranslationProvider + Send + Sync> {
-        // 创建一个新的 FluentTranslator 实例
-        let new_translator = FluentTranslator::new(&self.current_locale, &self.default_locale);
-
-        // 重新添加所有翻译
-        for (_locale, _bundle) in &self.bundles {
-            // 这里我们无法直接克隆 bundle，所以需要重新创建
-            // 实际实现中，你可能需要存储原始的 FTL 内容以便重新创建 bundle
-            // 为了简化，这里我们只复制当前语言设置
-        }
-
-        Box::new(new_translator)
-    }
-}
-
-// 不安全的 Send + Sync 实现，因为 FluentBundle 不实现它们
-// 但我们通过 Mutex 保护访问，所以实际上是安全的
-unsafe impl Send for FluentTranslator {}
-unsafe impl Sync for FluentTranslator {}
 
 /// Oak Fluent 翻译提供者
-#[cfg(feature = "oak-fluent")]
 pub struct OakFluentTranslator {
     translators: HashMap<String, OakFluentTranslatorCore>,
     current_locale: String,
     default_locale: String,
 }
 
-#[cfg(feature = "oak-fluent")]
 impl OakFluentTranslator {
     /// 创建新的 Oak Fluent 翻译提供者
     pub fn new(current_locale: &str, default_locale: &str) -> Self {
@@ -250,7 +125,65 @@ impl OakFluentTranslator {
     /// 从文件加载翻译
     pub fn add_translations_from_file(&mut self, locale: &str, file_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         let content = std::fs::read_to_string(file_path)?;
-        self.add_translations_from_string(locale, &content)
+        
+        // 根据文件扩展名选择解析器
+        match file_path.extension().and_then(|ext| ext.to_str()) {
+            Some("ftl") => self.add_translations_from_string(locale, &content),
+            Some("json") => {
+                #[cfg(feature = "json")]
+                {
+                    let translations: HashMap<String, String> = oak_json::from_str(&content)?;
+                    self.add_simple_translations(locale, translations)
+                }
+                #[cfg(not(feature = "json"))]
+                {
+                    Err("JSON feature is not enabled".into())
+                }
+            }
+            Some("toml") => {
+                #[cfg(feature = "toml")]
+                {
+                    let translations: HashMap<String, String> = oak_toml::from_str(&content)?;
+                    self.add_simple_translations(locale, translations)
+                }
+                #[cfg(not(feature = "toml"))]
+                {
+                    Err("TOML feature is not enabled".into())
+                }
+            }
+            Some("yaml") | Some("yml") => {
+                #[cfg(feature = "yaml")]
+                {
+                    let translations: HashMap<String, String> = oak_yaml::from_str(&content)?;
+                    self.add_simple_translations(locale, translations)
+                }
+                #[cfg(not(feature = "yaml"))]
+                {
+                    Err("YAML feature is not enabled".into())
+                }
+            }
+            _ => Err("Unsupported file format".into()),
+        }
+    }
+
+    /// 添加简单翻译（从 HashMap 加载）
+    pub fn add_simple_translations(&mut self, locale: &str, translations: HashMap<String, String>) -> Result<(), Box<dyn std::error::Error>> {
+        // 这里我们需要将 HashMap 转换为 Fluent 格式，或者添加对简单键值对的支持
+        // 为了简单起见，我们暂时将其添加到 SimpleTranslator 中
+        // 后续可以考虑更复杂的实现
+        
+        // 这里我们使用一个临时的 SimpleTranslator 来处理简单的键值对翻译
+        // 实际实现中，我们可能需要将这些翻译转换为 Fluent 格式
+        
+        // 由于 OakFluentTranslator 目前只支持 Fluent 格式，我们需要添加对简单键值对的支持
+        // 这里我们使用一个简单的方法，将键值对转换为 Fluent 格式的字符串
+        let mut ftl_content = String::new();
+        for (key, value) in translations {
+            ftl_content.push_str(&format!("{} = {}", key, value));
+            ftl_content.push_str("\n");
+        }
+        
+        self.add_translations_from_string(locale, &ftl_content)
     }
 
     /// 从字符串加载翻译
@@ -266,7 +199,6 @@ impl OakFluentTranslator {
     }
 }
 
-#[cfg(feature = "oak-fluent")]
 impl TranslationProvider for OakFluentTranslator {
     fn translate(
         &self,
@@ -316,11 +248,9 @@ impl TranslationProvider for OakFluentTranslator {
     }
 }
 
-#[cfg(feature = "oak-fluent")]
 // 实现 Send + Sync 因为 OakFluentTranslatorCore 是可克隆的且线程安全的
 unsafe impl Send for OakFluentTranslator {}
 
-#[cfg(feature = "oak-fluent")]
 unsafe impl Sync for OakFluentTranslator {}
 
 /// 翻译缓存键
@@ -428,71 +358,35 @@ impl I18nContext {
 lazy_static::lazy_static! {
     /// 全局国际化实例
     pub static ref I18N: std::sync::Mutex<I18nContext> = {
-        #[cfg(feature = "oak-fluent")]
-        {
-            // 创建默认的 Oak Fluent 翻译提供者
-            let mut translator = OakFluentTranslator::new("en", "en");
+        // 创建默认的 Oak Fluent 翻译提供者
+        let mut translator = OakFluentTranslator::new("en", "en");
 
-            // 尝试加载默认语言资源
-            let default_locale = std::env::var("LANG").unwrap_or_else(|_| "en".to_string());
+        // 尝试加载默认语言资源
+        let default_locale = std::env::var("LANG").unwrap_or_else(|_| "en".to_string());
 
-            // 加载英文资源
-            if let Ok(english_path) = std::env::var("ITOOLS_LOCALE_EN") {
-                let path = Path::new(&english_path);
-                if path.exists() {
-                    if let Err(e) = translator.add_translations_from_file("en", path) {
-                        info!("Failed to load English translations: {}", e);
-                    }
+        // 加载英文资源
+        if let Ok(english_path) = std::env::var("ITOOLS_LOCALE_EN") {
+            let path = Path::new(&english_path);
+            if path.exists() {
+                if let Err(e) = translator.add_translations_from_file("en", path) {
+                    info!("Failed to load English translations: {}", e);
                 }
             }
-
-            // 加载当前语言资源
-            if default_locale != "en" {
-                if let Ok(locale_path) = std::env::var(format!("ITOOLS_LOCALE_{}", default_locale.to_uppercase().replace('-', "_"))) {
-                    let path = Path::new(&locale_path);
-                    if path.exists() {
-                        if let Err(e) = translator.add_translations_from_file(&default_locale, path) {
-                            info!("Failed to load {} translations: {}", default_locale, e);
-                        }
-                    }
-                }
-            }
-
-            std::sync::Mutex::new(I18nContext::new(Box::new(translator)))
         }
 
-        #[cfg(not(feature = "oak-fluent"))]
-        {
-            // 创建默认的 Fluent 翻译提供者
-            let mut translator = FluentTranslator::new("en", "en");
-
-            // 尝试加载默认语言资源
-            let default_locale = std::env::var("LANG").unwrap_or_else(|_| "en".to_string());
-
-            // 加载英文资源
-            if let Ok(english_path) = std::env::var("ITOOLS_LOCALE_EN") {
-                let path = Path::new(&english_path);
+        // 加载当前语言资源
+        if default_locale != "en" {
+            if let Ok(locale_path) = std::env::var(format!("ITOOLS_LOCALE_{}", default_locale.to_uppercase().replace('-', "_"))) {
+                let path = Path::new(&locale_path);
                 if path.exists() {
-                    if let Err(e) = translator.add_translations_from_file("en", path) {
-                        info!("Failed to load English translations: {}", e);
+                    if let Err(e) = translator.add_translations_from_file(&default_locale, path) {
+                        info!("Failed to load {} translations: {}", default_locale, e);
                     }
                 }
             }
-
-            // 加载当前语言资源
-            if default_locale != "en" {
-                if let Ok(locale_path) = std::env::var(format!("ITOOLS_LOCALE_{}", default_locale.to_uppercase().replace('-', "_"))) {
-                    let path = Path::new(&locale_path);
-                    if path.exists() {
-                        if let Err(e) = translator.add_translations_from_file(&default_locale, path) {
-                            info!("Failed to load {} translations: {}", default_locale, e);
-                        }
-                    }
-                }
-            }
-
-            std::sync::Mutex::new(I18nContext::new(Box::new(translator)))
         }
+
+        std::sync::Mutex::new(I18nContext::new(Box::new(translator)))
     };
 }
 
