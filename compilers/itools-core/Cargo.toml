@@ -1,6 +1,6 @@
 [package]
 name = "itools-core"
-version = { workspace = true }
+version = "0.0.1"
 authors = { workspace = true }
 edition = { workspace = true }
 description = "Core functionality for iTools, including error handling and utilities"
