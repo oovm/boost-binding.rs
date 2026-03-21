@@ -85,7 +85,7 @@ impl Walker {
         #[cfg(feature = "glob")]
         let mut walker = Self { options, glob_set: None };
         #[cfg(not(feature = "glob"))]
-        let mut walker = Self { options };
+        let walker = Self { options };
         
         #[cfg(feature = "glob")]
         walker.build_glob_set()?;
@@ -188,7 +188,7 @@ impl Walker {
                 if self.should_include(&entry_path) {
                     let permit = semaphore.acquire().await?;
                     let tx_clone = tx.clone();
-                    let semaphore = semaphore.clone();
+                    let semaphore = semaphore;
                     let self_clone = self.clone();
 
                     Box::pin(self_clone.walk_recursive(&entry_path, tx_clone, &semaphore)).await?;
@@ -242,7 +242,7 @@ impl Walker {
 
                 if self.should_include(&entry_path) {
                     let permit = semaphore.acquire().await?;
-                    let semaphore = semaphore.clone();
+                    let semaphore = semaphore;
                     let self_clone = self.clone();
 
                     Box::pin(self_clone.walk_with_recursive(&entry_path, callback, &semaphore)).await?;

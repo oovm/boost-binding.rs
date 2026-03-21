@@ -33,7 +33,7 @@ use syn::*;
 /// }
 /// ```
 #[proc_macro_attribute]
-pub fn Command(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn command(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     match input.data {
@@ -65,7 +65,7 @@ pub fn Command(_args: TokenStream, input: TokenStream) -> TokenStream {
 /// }
 /// ```
 #[proc_macro_attribute]
-pub fn Error(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn error(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     match input.data {

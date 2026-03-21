@@ -21,11 +21,12 @@
         "build": "pnpm -F @itools/documentation build",
         "preview": "pnpm -F @itools/documentation preview",
         "build:release": "tsx scripts/build-release.ts",
-        "u": "cargo upgrade --workspace",
         "check:ci": "node scripts/check.mjs",
         "check": "node scripts/check.mjs",
         "typecheck:frontend": "pnpm -r exec tsc --noEmit",
-        "build:frontend": "pnpm -r run build"
+        "build:frontend": "pnpm -r run build",
+        "u": "cargo upgrade --incompatible",
+        "p": "cargo workspace publish --resume"
     },
     "devDependencies": {
         "@biomejs/biome": "^1.8.0",
