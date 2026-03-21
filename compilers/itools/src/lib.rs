@@ -6,8 +6,15 @@
 
 use tracing::info;
 
+/// 导入宏
+#[macro_use]
+extern crate itools_macros;
+
 /// 国际化功能 - 使用 itools-localization 模块的国际化实现
 pub use itools_localization::{get_locale, set_locale, t, t_with_args};
+
+/// 导出翻译宏
+pub use itools_macros::{t, t_with_args};
 
 /// 命令行参数解析 trait
 pub trait Parse {

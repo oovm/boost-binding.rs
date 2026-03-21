@@ -7,29 +7,33 @@ Asynchronous directory traversal library with concurrent processing and glob pat
 - **Asynchronous**: Built on Tokio for non-blocking I/O operations
 - **Concurrent**: Parallel directory traversal with configurable concurrency limits
 - **Glob Pattern Support**: Includes and excludes files using glob patterns (like .gitignore)
-- **Flexible API**: Easy-to-use interface with both callback-based and collection-based methods
+- **Flexible API**: Easy-to-use interface with both callback-based and stream-based methods
 - **Symbolic Link Support**: Optional symbolic link following
 - **Recursive Traversal**: Configurable recursive directory traversal
 
 ## Usage Examples
 
-### Basic Async Traversal
+### Basic Async Traversal with Stream
 
 ```rust
 use itools_walker::Walker;
+use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a walker with default options
-    let walker = Walker::new(None)?;
+    let walker = Walker::new()?;
     
-    // Walk the current directory asynchronously
-    let entries = walker.walk(".").await?;
+    // Walk the current directory asynchronously (returns a stream)
+    let mut stream = walker.walk(".").await?;
     
-    // Process the results (entries are already collected)
-    for entry in entries {
-        println!("{:?} - dir: {}, file: {}, symlink: {}", 
-            entry.path, entry.is_dir, entry.is_file, entry.is_symlink);
+    // Process the results stream
+    while let Some(entry) = stream.next().await {
+        match entry {
+            Ok(walk_entry) => println!("{:?} - dir: {}, file: {}, symlink: {}", 
+                walk_entry.path, walk_entry.is_dir(), walk_entry.is_file(), walk_entry.is_symlink()),
+            Err(e) => println!("Error: {:?}", e),
+        }
     }
     
     Ok(())
@@ -65,6 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 use itools_walker::{Walker, WalkOptions};
+use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -77,11 +82,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let walker = Walker::with_options(options)?;
     
-    let entries = walker.walk(".").await?;
+    let mut stream = walker.walk(".").await?;
     
-    for entry in entries {
-        if entry.is_file {
-            println!("Found file: {:?}", entry.path);
+    while let Some(entry) = stream.next().await {
+        match entry {
+            Ok(walk_entry) if walk_entry.is_file() => {
+                println!("Found file: {:?}", walk_entry.path);
+            }
+            Err(e) => println!("Error: {:?}", e),
+            _ => {}
         }
     }
     
@@ -89,16 +98,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-### Walk with Glob (Convenient Function)
+### Walk with Convenient Functions
 
 ```rust
 use itools_walker::{walk, walk_with_options, WalkOptions};
+use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Use the convenient function with default options
-    let entries = walk(".").await?;
-    println!("Found {} entries", entries.len());
+    let mut stream = walk(".").await?;
+    let mut count = 0;
+    
+    while let Some(entry) = stream.next().await {
+        if entry.is_ok() {
+            count += 1;
+        }
+    }
+    println!("Found {} entries", count);
     
     // Create options with glob patterns
     let options = WalkOptions {
@@ -109,9 +126,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     
     // Use the convenient function with custom options
-    let rust_files = walk_with_options(".", options).await?;
+    let mut rust_stream = walk_with_options(".", options).await?;
+    let mut rust_count = 0;
     
-    println!("Found {} Rust files", rust_files.len());
+    while let Some(entry) = rust_stream.next().await {
+        if let Ok(walk_entry) = entry {
+            if walk_entry.is_file() {
+                rust_count += 1;
+            }
+        }
+    }
+    
+    println!("Found {} Rust files", rust_count);
     
     Ok(())
 }
@@ -121,7 +147,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 - **Non-blocking**: Uses Tokio's async I/O for efficient directory traversal
 - **Parallel Processing**: Concurrent traversal speeds up processing of large directory structures
-- **Memory Efficient**: Callback-based API allows processing entries as they are found
+- **Memory Efficient**: Stream-based API allows processing entries as they are found
 - **Flexible**: Configurable concurrency limits to balance performance and system resources
 
 ## Use Cases
@@ -137,7 +163,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 - **Modern Async Design**: Built with Tokio for optimal performance
 - **Concurrent Processing**: Parallel traversal for faster results
 - **Glob Pattern Support**: Powerful filtering capabilities
-- **Flexible API**: Choose between collection-based or callback-based approaches
+- **Flexible API**: Choose between stream-based or callback-based approaches
 - **Reliable**: Handles errors gracefully and provides clear error messages
 - **Well Documented**: Comprehensive documentation and examples
 

@@ -5,6 +5,7 @@
 //! 提供异步的目录遍历功能，支持递归遍历目录结构、并发处理和 glob 模式匹配。
 
 use futures::stream::{self, Stream};
+use std::num::NonZeroU32;
 use std::path::Path;
 use tokio::{
     fs,
@@ -31,9 +32,9 @@ pub struct WalkOptions {
     #[cfg(feature = "glob")]
     pub exclude_patterns: Vec<String>,
     /// 通道大小
-    pub channel_size: usize,
+    pub channel_size: NonZeroU32,
     /// 并发度限制
-    pub concurrency_limit: Option<usize>,
+    pub concurrency_limit: NonZeroU32,
 }
 
 impl Default for WalkOptions {
@@ -45,8 +46,8 @@ impl Default for WalkOptions {
             include_patterns: Vec::new(),
             #[cfg(feature = "glob")]
             exclude_patterns: Vec::new(),
-            concurrency_limit: Some(10),
-            channel_size: 64,
+            concurrency_limit: NonZeroU32::new(10).unwrap(),
+            channel_size: NonZeroU32::new(64).unwrap(),
         }
     }
 }
@@ -58,12 +59,23 @@ pub struct WalkEntry {
     pub path: std::path::PathBuf,
     /// 文件元数据
     pub metadata: std::fs::Metadata,
+}
+
+impl WalkEntry {
     /// 是否为目录
-    pub is_dir: bool,
+    pub fn is_dir(&self) -> bool {
+        self.metadata.is_dir()
+    }
+    
     /// 是否为文件
-    pub is_file: bool,
+    pub fn is_file(&self) -> bool {
+        self.metadata.is_file()
+    }
+    
     /// 是否为符号链接
-    pub is_symlink: bool,
+    pub fn is_symlink(&self) -> bool {
+        self.path.symlink_metadata().map(|m| m.file_type().is_symlink()).unwrap_or(false)
+    }
 }
 
 /// 异步目录遍历器
@@ -138,10 +150,9 @@ impl Walker {
         path: P,
     ) -> Result<impl Stream<Item = Result<WalkEntry, WalkError>> + use<P>, WalkError> {
         let path = path.as_ref().to_path_buf();
-        let (tx, rx) = mpsc::channel(self.options.channel_size);
+        let (tx, rx) = mpsc::channel(self.options.channel_size.get() as usize);
 
-        let semaphore =
-            self.options.concurrency_limit.map(|limit| Semaphore::new(limit)).unwrap_or_else(|| Semaphore::new(usize::MAX));
+        let semaphore = Semaphore::new(self.options.concurrency_limit.get() as usize);
 
         let self_clone = self.clone();
 
@@ -173,10 +184,7 @@ impl Walker {
         let metadata =
             if self.options.follow_symlinks { fs::metadata(path).await? } else { fs::symlink_metadata(path).await? };
 
-        let is_dir = metadata.is_dir();
-        let is_file = metadata.is_file();
-        let is_symlink = path.symlink_metadata()?.file_type().is_symlink();
-        let entry = WalkEntry { path: path.to_path_buf(), metadata, is_dir, is_file, is_symlink };
+        let entry = WalkEntry { path: path.to_path_buf(), metadata };
 
         if tx.send(Ok(entry)).await.is_err() {
             return Ok(());
@@ -210,8 +218,7 @@ impl Walker {
         mut callback: F,
     ) -> Result<(), WalkError> {
         let path = path.as_ref();
-        let semaphore =
-            self.options.concurrency_limit.map(|limit| Semaphore::new(limit)).unwrap_or_else(|| Semaphore::new(usize::MAX));
+        let semaphore = Semaphore::new(self.options.concurrency_limit.get() as usize);
 
         self.walk_with_recursive(path, &mut callback, &semaphore).await
     }
@@ -230,10 +237,7 @@ impl Walker {
         let metadata =
             if self.options.follow_symlinks { fs::metadata(path).await? } else { fs::symlink_metadata(path).await? };
 
-        let is_dir = metadata.is_dir();
-        let is_file = metadata.is_file();
-        let is_symlink = path.symlink_metadata()?.file_type().is_symlink();
-        let entry = WalkEntry { path: path.to_path_buf(), metadata, is_dir, is_file, is_symlink };
+        let entry = WalkEntry { path: path.to_path_buf(), metadata };
 
         callback(&entry)?;
 
