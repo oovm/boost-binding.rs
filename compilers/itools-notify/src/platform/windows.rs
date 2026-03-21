@@ -101,14 +101,21 @@ impl Watcher for WindowsWatcher {
         // 使用 SendableHandle 包装 HANDLE 以在线程间安全传递
         let sendable_handle = SendableHandle(handle);
 
-        thread::spawn(move || {
+        // 定义一个安全的监控函数
+        fn monitor_directory(
+            sendable_handle: SendableHandle,
+            event_sender: mpsc::Sender<FileSystemEvent>,
+            path_clone: PathBuf,
+            recursive: bool,
+        ) {
             let mut buffer = [0u8; 4096];
+            let handle = sendable_handle.get();
 
             loop {
                 let mut bytes_returned: DWORD = 0;
                 let success = unsafe {
                     ReadDirectoryChangesW(
-                        sendable_handle.0,
+                        handle,
                         buffer.as_mut_ptr() as *mut _, 
                         buffer.len() as DWORD,
                         recursive as BOOL,
@@ -157,7 +164,12 @@ impl Watcher for WindowsWatcher {
                 }
             }
 
-            unsafe { CloseHandle(sendable_handle.0) };
+            unsafe { CloseHandle(handle) };
+        }
+
+        // 启动监控线程
+        thread::spawn(move || {
+            monitor_directory(sendable_handle, event_sender, path_clone, recursive);
         });
 
         Ok(())
