@@ -22,9 +22,9 @@ readme = "readme.md"
 
 [workspace.dependencies]
 serde = { version = "1.0.228", features = ["derive", "rc"] }
-serde_json = { version = "1.0.149" }
-serde_yaml = { version = "0.9.34" }
-toml = "1.0.7+spec-1.1.0"
+oak-toml = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
+oak-yaml = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
+oak-json = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
 crossterm = "0.29.0"
 lru = "0.16"
 tokio = { version = "1.50" }
@@ -47,9 +47,6 @@ itools-localization = { path = "compilers/itools-localization", version = "0.0.1
 
 # Oak parsers
 oak-core = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
-oak-toml = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
-oak-yaml = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
-oak-json = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
 oak-glob = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
 oak-fluent = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
 

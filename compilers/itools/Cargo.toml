@@ -22,9 +22,9 @@ itools-localization = { workspace = true }
 # Workspace dependencies
 
 serde = { workspace = true }
-serde_json = { workspace = true }
-serde_yaml = { workspace = true }
-toml = { workspace = true }
+oak-json = { workspace = true }
+oak-yaml = { workspace = true }
+oak-toml = { workspace = true }
 itools-notify = { path = "../itools-notify" }
 
 [build-dependencies]

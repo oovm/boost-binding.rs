@@ -1,6 +1,6 @@
 //! Linux 平台的文件系统监控实现
 
-use std::{ffi::CString, os::unix::ffi::OsStrExt, path::PathBuf, sync::mpsc, thread};
+use std::{ffi::CString, os::unix::ffi::{OsStrExt, OsStringExt}, path::PathBuf, sync::mpsc, thread};
 
 use libc::{
     IN_ACCESS, IN_ALL_EVENTS, IN_CREATE, IN_DELETE, IN_MODIFY, IN_MOVED_FROM, IN_MOVED_TO, close, inotify_add_watch,
@@ -19,11 +19,11 @@ pub struct LinuxWatcher {
 
 impl LinuxWatcher {
     /// 创建新的 Linux 监控器
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new() -> Result<Self, std::io::Error> {
         // 初始化 inotify
         let inotify_fd = unsafe { inotify_init() };
         if inotify_fd < 0 {
-            return Err(std::io::Error::last_os_error().into());
+            return Err(std::io::Error::last_os_error());
         }
 
         let (event_sender, event_receiver) = mpsc::channel();
@@ -84,9 +84,9 @@ impl LinuxWatcher {
 }
 
 impl Watcher for LinuxWatcher {
-    type Error = Box<dyn std::error::Error>;
+    type Error = std::io::Error;
 
-    fn watch<P: Into<PathBuf>>(&mut self, path: P, recursive: bool) -> Result<(), Self::Error> {
+    fn watch<P: Into<PathBuf>>(&mut self, path: P, _recursive: bool) -> Result<(), Self::Error> {
         let path = path.into();
         self.watch_paths.push(path.clone());
 
@@ -96,7 +96,7 @@ impl Watcher for LinuxWatcher {
 
             let wd = unsafe { inotify_add_watch(fd, path_str.as_ptr(), mask) };
             if wd < 0 {
-                return Err(std::io::Error::last_os_error().into());
+                return Err(std::io::Error::last_os_error());
             }
         }
 

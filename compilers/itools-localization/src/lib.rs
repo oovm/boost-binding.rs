@@ -406,22 +406,16 @@ lazy_static::lazy_static! {
         // 加载英文资源
         if let Ok(english_path) = std::env::var("ITOOLS_LOCALE_EN") {
             let path = Path::new(&english_path);
-            if path.exists() {
-                if let Err(e) = translator.add_translations_from_file("en", path) {
-                    info!("Failed to load English translations: {}", e);
-                }
+            if path.exists() && let Err(e) = translator.add_translations_from_file("en", path) {
+                info!("Failed to load English translations: {}", e);
             }
         }
 
         // 加载当前语言资源
-        if default_locale != "en" {
-            if let Ok(locale_path) = std::env::var(format!("ITOOLS_LOCALE_{}", default_locale.to_uppercase().replace('-', "_"))) {
-                let path = Path::new(&locale_path);
-                if path.exists() {
-                    if let Err(e) = translator.add_translations_from_file(&default_locale, path) {
-                        info!("Failed to load {} translations: {}", default_locale, e);
-                    }
-                }
+        if default_locale != "en" && let Ok(locale_path) = std::env::var(format!("ITOOLS_LOCALE_{}", default_locale.to_uppercase().replace('-', "_"))) {
+            let path = Path::new(&locale_path);
+            if path.exists() && let Err(e) = translator.add_translations_from_file(&default_locale, path) {
+                info!("Failed to load {} translations: {}", default_locale, e);
             }
         }
 
