@@ -12,3 +12,6 @@ build = "build.rs"
 [dependencies]
 itools = { workspace = true }
 itools-macros = { workspace = true }
+
+[build-dependencies]
+itools = { workspace = true }

@@ -4,7 +4,6 @@
 //!
 //! 提供命令行接口功能，包括命令解析、执行和交互。
 
-use clap;
 use tracing::info;
 
 /// 导入宏
@@ -63,31 +62,75 @@ impl Parse for bool {
     }
 }
 
-/// 命令行应用框架 - 使用 clap 解析
+/// 命令行参数解析 trait
 ///
-/// 开发者可以通过实现 clap 的 Parser trait 来定义自己的命令结构
+/// 开发者可以通过实现此 trait 来定义自己的命令结构
+pub trait Parser {
+    /// 从命令行参数中解析当前类型
+    fn parse() -> Self
+    where
+        Self: Sized;
+    
+    /// 从命令行参数中解析当前类型并返回 Result
+    fn try_parse() -> Result<Self, ParseError>
+    where
+        Self: Sized;
+}
+
+/// 解析错误
+#[derive(Debug)]
+pub struct ParseError {
+    /// 错误消息
+    pub message: String,
+}
+
+impl ParseError {
+    /// 创建新的解析错误
+    pub fn new(message: &str) -> Self {
+        Self { message: message.to_string() }
+    }
+    
+    /// 退出程序并显示错误信息
+    pub fn exit(&self) -> ! {
+        eprintln!("错误: {}", self.message);
+        std::process::exit(1);
+    }
+}
+
+impl std::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for ParseError {}
+
+/// 命令行应用框架
+///
+/// 提供类似 clap 的命令行解析功能
 ///
 /// # 示例
 /// ```rust
-/// use clap::Parser;
-/// use itools::App;
+/// use itools::{App, Parser};
 ///
-/// #[derive(Parser, Debug)]
-/// #[command(name = "myapp", about = "My awesome CLI tool")]
 /// struct MyApp {
-///     #[command(subcommand)]
 ///     command: MyCommand,
 /// }
 ///
-/// #[derive(clap::Subcommand, Debug)]
 /// enum MyCommand {
-///     /// 初始化命令
-///     Init {
-///         /// 项目名称
-///         name: String,
-///     },
-///     /// 构建命令
+///     Init { name: String },
 ///     Build,
+/// }
+///
+/// impl Parser for MyApp {
+///     fn parse() -> Self {
+///         Self::try_parse().unwrap_or_else(|e| e.exit())
+///     }
+///     
+///     fn try_parse() -> Result<Self, ParseError> {
+///         // 实现解析逻辑
+///         Ok(Self { command: MyCommand::Build })
+///     }
 /// }
 ///
 /// fn main() {
@@ -104,7 +147,7 @@ impl App {
     /// ```rust
     /// let app = App::parse::<MyApp>();
     /// ```
-    pub fn parse<T: clap::Parser>() -> T {
+    pub fn parse<T: Parser>() -> T {
         T::parse()
     }
 
@@ -122,7 +165,7 @@ impl App {
     ///     }
     /// }
     /// ```
-    pub fn try_parse<T: clap::Parser>() -> Result<T, clap::Error> {
+    pub fn try_parse<T: Parser>() -> Result<T, ParseError> {
         T::try_parse()
     }
 }
@@ -154,6 +197,19 @@ pub enum Command {
 impl Parse for Cli {
     fn parse(args: &mut Vec<String>) -> Self {
         Self { command: Command::parse(args) }
+    }
+}
+
+/// 为 Cli 实现 Parser trait
+impl Parser for Cli {
+    fn parse() -> Self {
+        let mut args: Vec<String> = std::env::args().skip(1).collect();
+        <Cli as Parse>::parse(&mut args)
+    }
+    
+    fn try_parse() -> Result<Self, ParseError> {
+        let mut args: Vec<String> = std::env::args().skip(1).collect();
+        Ok(<Cli as Parse>::parse(&mut args))
     }
 }
 

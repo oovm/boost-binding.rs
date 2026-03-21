@@ -3,11 +3,11 @@
 //! 展示如何使用 iTools 的 TUI 功能，包括交互式菜单、进度条和加载动画
 
 use itools::{Parse, init_cli, tui};
-use itools_macros::Command;
+use itools_macros::command;
 use std::time::Duration;
 
 /// 测试命令行工具
-#[Command]
+#[command]
 #[derive(Debug)]
 pub struct InteractiveCli {
     /// 命令
@@ -15,7 +15,7 @@ pub struct InteractiveCli {
 }
 
 /// 测试命令枚举
-#[Command]
+#[command]
 #[derive(Debug)]
 pub enum InteractiveCommand {
     /// 基于数字输入的交互式菜单

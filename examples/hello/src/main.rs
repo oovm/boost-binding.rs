@@ -3,10 +3,10 @@
 //! 展示如何使用 itools 的宏来解析命令行参数
 
 use itools::{Parse, init_cli};
-use itools_macros::Command;
+use itools_macros::command;
 
 /// 测试命令行工具
-#[Command]
+#[command]
 #[derive(Debug)]
 pub struct TestCli {
     /// 命令
@@ -14,7 +14,7 @@ pub struct TestCli {
 }
 
 /// 测试命令枚举
-#[Command]
+#[command]
 #[derive(Debug)]
 pub enum TestCommand {
     /// 问候命令

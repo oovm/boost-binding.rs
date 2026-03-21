@@ -1,18 +1,11 @@
 [package]
 name = "itools-cli"
-version = { workspace = true }
-authors = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
-homepage = { workspace = true }
-repository = "https://github.com/oovm/iTools/tree/dev/compilers/itools-cli"
-description = "iTools command line interface"
+version = "0.1.0"
+edition = "2021"
+description = "iTools command line interface module"
+license = "MIT"
 
 [dependencies]
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-itools-localization = { workspace = true }
-itools-tui = { workspace = true }
-
-# Command line parsing
-clap = { version = "4.5.0", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+itools-tui = { path = "../itools-tui" }

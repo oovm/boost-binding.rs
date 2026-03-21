@@ -2,6 +2,8 @@
 resolver = "2"
 members = [
     "compilers/*",
+    "examples/hello",
+    "examples/interactive",
 ]
 default-members = [
     "compilers/itools",

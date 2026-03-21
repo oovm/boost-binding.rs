@@ -16,8 +16,7 @@ itools-macros = { workspace = true }
 lazy_static = { workspace = true }
 crossterm = { workspace = true }
 
-# Command line parsing
-clap = { version = "4.5.0", features = ["derive"] }
+
 
 # Internationalization
 itools-localization = { workspace = true }

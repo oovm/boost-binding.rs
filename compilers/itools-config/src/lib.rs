@@ -24,7 +24,7 @@ pub enum ConfigError {
 impl std::fmt::Display for ConfigError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            ConfigError::FileNotFound(path) => write!(f, "{}", t_with_args("errors.config_not_found", &[("path", path)])),
+            ConfigError::FileNotFound(path) => write!(f, "File not found: {}", path),
             ConfigError::ParseError(msg) => write!(f, "{}", msg),
             ConfigError::UnsupportedFormat(format) => write!(f, "Unsupported config format: {}", format),
             ConfigError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
@@ -34,100 +34,76 @@ impl std::fmt::Display for ConfigError {
 
 impl Error for ConfigError {}
 
+/// 配置值类型
+/// 
+/// 表示配置中的各种值类型，包括字符串、数字、布尔值、数组和对象
+#[derive(Debug, Clone, PartialEq)]
+pub enum ConfigValue {
+    /// 字符串类型
+    String(String),
+    /// 数字类型
+    Number(f64),
+    /// 布尔类型
+    Boolean(bool),
+    /// 数组类型
+    Array(Vec<ConfigValue>),
+    /// 对象类型
+    Object(HashMap<String, ConfigValue>),
+    /// 空值
+    Null,
+}
+
 #[cfg(feature = "json")]
 use oak_json::{JsonValueNode, ast::{JsonObject, JsonField, JsonString, JsonBoolean, JsonNumber}};
 
-/// 国际化功能 - 使用 itools-localization 模块的国际化实现
-pub use itools_localization::{t, t_with_args};
-
-/// 命令行参数解析 trait
-pub trait Parse {
-    /// 从命令行参数中解析当前类型
-    fn parse(args: &mut Vec<String>) -> Self;
-}
-
-/// 为 String 实现 Parse trait
-impl Parse for String {
-    fn parse(args: &mut Vec<String>) -> Self {
-        if args.is_empty() {
-            panic!("{}", t("errors.expected_string_argument"));
-        }
-        args.remove(0)
-    }
-}
-
-/// 为 i32 实现 Parse trait
-impl Parse for i32 {
-    fn parse(args: &mut Vec<String>) -> Self {
-        if args.is_empty() {
-            panic!("{}", t("errors.expected_integer_argument"));
-        }
-        args.remove(0).parse().expect(&t("errors.invalid_integer"))
-    }
-}
-
-/// 为 u32 实现 Parse trait
-impl Parse for u32 {
-    fn parse(args: &mut Vec<String>) -> Self {
-        if args.is_empty() {
-            panic!("{}", t("errors.expected_unsigned_integer_argument"));
-        }
-        args.remove(0).parse().expect(&t("errors.invalid_unsigned_integer"))
-    }
-}
-
-/// 为 bool 实现 Parse trait
-impl Parse for bool {
-    fn parse(args: &mut Vec<String>) -> Self {
-        if args.is_empty() {
-            panic!("{}", t("errors.expected_boolean_argument"));
-        }
-        args.remove(0).parse().expect(&t("errors.invalid_boolean"))
-    }
-}
-
-#[cfg(feature = "json")]
 /// 配置片段
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ConfigFragment {
     /// 配置数据
-    pub data: JsonValueNode,
+    pub data: ConfigValue,
     /// 优先级
     pub priority: u32,
 }
 
-#[cfg(feature = "json")]
 /// 配置管理器
 #[derive(Debug)]
 pub struct ConfigManager {
     /// 配置片段
     fragments: Vec<ConfigFragment>,
     /// 合并后的配置
-    merged_config: JsonValueNode,
+    merged_config: ConfigValue,
 }
 
-#[cfg(feature = "json")]
 impl ConfigManager {
     /// 创建新的配置管理器
     pub fn new() -> Self {
-        Self { fragments: Vec::new(), merged_config: JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }) }
+        Self { fragments: Vec::new(), merged_config: ConfigValue::Object(HashMap::new()) }
     }
 
     /// 加载配置片段
     pub fn load_fragment(&mut self, path: &Path) -> Result<(), ConfigError> {
-        info!("{}", t_with_args("messages.loading_config_fragment", &[("path", &path.to_string_lossy())]));
+        info!("Loading config fragment: {}", path.to_string_lossy());
 
         let content = fs::read_to_string(path)
             .map_err(|_e| ConfigError::FileNotFound(path.to_string_lossy().to_string()))?;
 
         let data = match path.extension().and_then(|ext| ext.to_str()) {
             Some("json") => {
-                oak_json::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?
+                #[cfg(feature = "json")]
+                {
+                    let json_value: oak_json::JsonValueNode = oak_json::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?;
+                    ConfigValue::from(json_value)
+                }
+                #[cfg(not(feature = "json"))]
+                {
+                    return Err(ConfigError::UnsupportedFormat("JSON feature is not enabled".to_string()));
+                }
             }
             Some("toml") => {
                 #[cfg(feature = "toml")]
                 {
-                    oak_toml::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?
+                    let toml_value: oak_toml::TomlValue = oak_toml::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?;
+                    ConfigValue::from(toml_value)
                 }
                 #[cfg(not(feature = "toml"))]
                 {
@@ -137,7 +113,8 @@ impl ConfigManager {
             Some("yaml") | Some("yml") => {
                 #[cfg(feature = "yaml")]
                 {
-                    oak_yaml::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?
+                    let yaml_value: oak_yaml::YamlValue = oak_yaml::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?;
+                    ConfigValue::from(yaml_value)
                 }
                 #[cfg(not(feature = "yaml"))]
                 {
@@ -159,12 +136,12 @@ impl ConfigManager {
     }
 
     /// 验证配置
-    pub fn validate_config(&self, config: &JsonValue) -> Result<(), ConfigError> {
+    pub fn validate_config(&self, config: &ConfigValue) -> Result<(), ConfigError> {
         // 这里可以添加配置验证逻辑
         // 例如：检查必需的配置项、验证配置值的类型和范围等
 
         // 示例：检查是否存在必需的配置项
-        if let oak_json::JsonValue::Object(_map) = config {
+        if let ConfigValue::Object(_map) = config {
             // 这里可以添加具体的验证逻辑
         }
 
@@ -206,7 +183,7 @@ impl ConfigManager {
         self.fragments.sort_by(|a, b| a.priority.cmp(&b.priority));
 
         // 初始化合并后的配置
-        self.merged_config = JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
+        self.merged_config = ConfigValue::Object(HashMap::new());
 
         // 合并所有配置片段
         for fragment in &self.fragments {
@@ -215,19 +192,14 @@ impl ConfigManager {
     }
 
     /// 合并两个值
-    fn merge_values(&self, target: JsonValue, source: JsonValue) -> JsonValue {
+    fn merge_values(&self, target: ConfigValue, source: ConfigValue) -> ConfigValue {
         match (target, source) {
-            (JsonValue::Object(target_obj), JsonValue::Object(source_obj)) => {
+            (ConfigValue::Object(target_map), ConfigValue::Object(source_map)) => {
                 // 构建target字段的HashMap以便快速查找
-                let mut target_fields: HashMap<String, JsonValue> = target_obj.fields.into_iter()
-                    .map(|field| (field.name.value, field.value))
-                    .collect();
+                let mut target_fields = target_map;
                 
                 // 处理source对象的所有字段
-                for source_field in source_obj.fields {
-                    let key = source_field.name.value;
-                    let source_value = source_field.value;
-                    
+                for (key, source_value) in source_map {
                     if target_fields.contains_key(&key) {
                         let target_value = target_fields.remove(&key).unwrap();
                         target_fields.insert(key, self.merge_values(target_value, source_value));
@@ -237,26 +209,14 @@ impl ConfigManager {
                     }
                 }
                 
-                // 将HashMap转换回Vec<JsonField>
-                let mut fields: Vec<JsonField> = target_fields.into_iter()
-                    .map(|(k, v)| JsonField {
-                        name: JsonString { value: k, span: (0..0).into() },
-                        value: v,
-                        span: (0..0).into()
-                    })
-                    .collect();
-                
-                // 按字段名排序以保持一致性
-                fields.sort_by(|a, b| a.name.value.cmp(&b.name.value));
-                
-                JsonValue::Object(JsonObject { fields, span: (0..0).into() })
+                ConfigValue::Object(target_fields)
             }
             (_, source) => source, // 其他类型直接替换
         }
     }
 
     /// 获取合并后的配置
-    pub fn get_config(&self) -> &JsonValue {
+    pub fn get_config(&self) -> &ConfigValue {
         &self.merged_config
     }
 
@@ -287,7 +247,7 @@ impl ConfigManager {
     }
 
     /// 添加默认配置值
-    pub fn add_defaults(&mut self, defaults: JsonValue) {
+    pub fn add_defaults(&mut self, defaults: ConfigValue) {
         let fragment = ConfigFragment { data: defaults, priority: 0 };
         self.fragments.push(fragment);
         self.merge_configs();
@@ -307,48 +267,21 @@ impl ConfigManager {
             }
             else {
                 // 确保当前是对象
-                if !matches!(current, JsonValue::Object(_)) {
-                    *current = JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
+                if !matches!(current, ConfigValue::Object(_)) {
+                    *current = ConfigValue::Object(HashMap::new());
                 }
                 
                 // 查找或创建字段
-                match current {
-                    JsonValue::Object(current_obj) => {
-                        // 先检查是否存在该字段
-                        let field_index = current_obj.fields.iter()
-                            .position(|field| field.name.value == *key);
-                        
-                        if let Some(index) = field_index {
-                            // 确保字段值是对象
-                            if !matches!(&current_obj.fields[index].value, JsonValue::Object(_)) {
-                                current_obj.fields[index].value = JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
-                            }
-                            current = &mut current_obj.fields[index].value;
-                        }
-                        else {
-                            // 创建新字段
-                            current_obj.fields.push(JsonField {
-                                name: JsonString { value: key.to_string(), span: (0..0).into() },
-                                value: JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }),
-                                span: (0..0).into()
-                            });
-                            // 找到刚添加的字段并设置current
-                            current = &mut current_obj.fields.last_mut().unwrap().value;
-                        }
+                if let ConfigValue::Object(current_map) = current {
+                    if !current_map.contains_key(*key) {
+                        current_map.insert(key.to_string(), ConfigValue::Object(HashMap::new()));
                     }
-                    _ => {
-                        // 不应该发生，因为上面已经确保是对象
-                        *current = JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
-                        if let JsonValue::Object(current_obj) = current {
-                            // 创建新字段
-                            current_obj.fields.push(JsonField {
-                                name: JsonString { value: key.to_string(), span: (0..0).into() },
-                                value: JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }),
-                                span: (0..0).into()
-                            });
-                            // 找到刚添加的字段并设置current
-                            current = &mut current_obj.fields.last_mut().unwrap().value;
-                        }
+                    // 确保字段值是对象
+                    if let ConfigValue::Object(_) = current_map.get(*key).unwrap() {
+                        current = current_map.get_mut(*key).unwrap();
+                    } else {
+                        current_map.insert(key.to_string(), ConfigValue::Object(HashMap::new()));
+                        current = current_map.get_mut(*key).unwrap();
                     }
                 }
             }
@@ -358,228 +291,22 @@ impl ConfigManager {
     }
 
     /// 解析值
-    fn parse_value(&self, value: &str) -> JsonValue {
+    fn parse_value(&self, value: &str) -> ConfigValue {
         // 尝试解析为不同类型
         if value == "true" {
-            JsonValue::Boolean(JsonBoolean { value: true, span: (0..0).into() })
+            ConfigValue::Boolean(true)
         }
         else if value == "false" {
-            JsonValue::Boolean(JsonBoolean { value: false, span: (0..0).into() })
+            ConfigValue::Boolean(false)
         }
         else if let Ok(num) = value.parse::<i64>() {
-            JsonValue::Number(JsonNumber { value: num as f64, span: (0..0).into() })
+            ConfigValue::Number(num as f64)
         }
         else if let Ok(num) = value.parse::<f64>() {
-            JsonValue::Number(JsonNumber { value: num, span: (0..0).into() })
+            ConfigValue::Number(num)
         }
         else {
-            JsonValue::String(JsonString { value: value.to_string(), span: (0..0).into() })
+            ConfigValue::String(value.to_string())
         }
     }
 }
-
-/// iTools 命令行工具
-#[derive(Debug)]
-pub struct Cli {
-    /// 命令
-    pub command: Command,
-}
-
-/// 命令枚举
-#[derive(Debug)]
-pub enum Command {
-    /// 初始化新项目
-    Init {
-        /// 项目名称
-        name: String,
-    },
-    /// 构建项目
-    Build,
-    /// 开发服务器
-    Dev,
-    /// 检查项目
-    Check,
-}
-
-/// 为 Cli 实现 Parse trait
-impl Parse for Cli {
-    fn parse(args: &mut Vec<String>) -> Self {
-        Self { command: Command::parse(args) }
-    }
-}
-
-/// 为 Command 实现 Parse trait
-impl Parse for Command {
-    fn parse(args: &mut Vec<String>) -> Self {
-        if args.is_empty() {
-            panic!("{}", t("errors.expected_command"));
-        }
-        let cmd = args.remove(0);
-        match cmd.as_str() {
-            "init" => Self::Init { name: String::parse(args) },
-            "build" => Self::Build,
-            "dev" => Self::Dev,
-            "check" => Self::Check,
-            _ => panic!("{}", t_with_args("errors.unknown_command", &[("command", &cmd)])),
-        }
-    }
-}
-
-/// 初始化 CLI 环境
-pub fn init_cli() {
-    // 初始化日志
-    tracing_subscriber::fmt().with_env_filter(tracing_subscriber::EnvFilter::from_default_env()).init();
-
-    info!("{}", t("messages.cli_initialized"));
-}
-
-/// TUI 功能模块
-pub mod tui {
-    use std::{
-        io::{self, Write},
-        thread,
-        time::Duration,
-    };
-
-    /// 进度条
-    pub struct ProgressBar {
-        total: u64,
-        current: u64,
-        width: u16,
-    }
-
-    impl ProgressBar {
-        /// 创建新的进度条
-        pub fn new(total: u64, width: u16) -> Self {
-            Self { total, current: 0, width }
-        }
-
-        /// 更新进度
-        pub fn update(&mut self, current: u64) {
-            self.current = current;
-            self.draw();
-        }
-
-        /// 增加进度
-        pub fn inc(&mut self, delta: u64) {
-            self.current += delta;
-            self.draw();
-        }
-
-        /// 完成进度
-        pub fn finish(&mut self) {
-            self.current = self.total;
-            self.draw();
-            println!();
-        }
-
-        /// 绘制进度条
-        fn draw(&self) {
-            let percentage = if self.total > 0 { (self.current as f64 / self.total as f64) * 100.0 } else { 0.0 };
-
-            let filled = (percentage / 100.0 * self.width as f64) as u16;
-            let empty = self.width - filled;
-
-            print!("\r[");
-            print!("{}", "=".repeat(filled as usize));
-            print!("{}", " ".repeat(empty as usize));
-            print!("}}] {:.1}%", percentage);
-            io::stdout().flush().unwrap();
-        }
-    }
-
-    /// 交互式选择菜单
-    pub fn select<T>(items: &[T], prompt: &str) -> Option<usize>
-    where
-        T: std::fmt::Display,
-    {
-        println!("{}", prompt);
-        for (i, item) in items.iter().enumerate() {
-            println!("{}: {}", i + 1, item);
-        }
-
-        loop {
-            print!("请选择 (1-{}): ", items.len());
-            io::stdout().flush().unwrap();
-
-            let mut input = String::new();
-            io::stdin().read_line(&mut input).unwrap();
-
-            match input.trim().parse::<usize>() {
-                Ok(choice) if choice >= 1 && choice <= items.len() => {
-                    return Some(choice - 1);
-                }
-                _ => {
-                    println!("无效的选择，请重新输入");
-                }
-            }
-        }
-    }
-
-    /// 显示加载动画
-    pub fn loading_animation(duration: Duration, message: &str) {
-        let chars = ["|", "/", "-", "\\"];
-        let start = std::time::Instant::now();
-
-        print!("{}", message);
-        io::stdout().flush().unwrap();
-
-        let mut i = 0;
-        while start.elapsed() < duration {
-            print!("\r{}{}", message, chars[i % chars.len()]);
-            io::stdout().flush().unwrap();
-            thread::sleep(Duration::from_millis(100));
-            i += 1;
-        }
-
-        print!("\r{}{}", message, " ");
-        println!();
-    }
-}
-
-/// 执行命令
-pub fn execute_command(cli: Cli) -> Result<(), ConfigError> {
-    match cli.command {
-        Command::Init { name } => {
-            info!("{}", t_with_args("messages.initializing_project", &[("name", &name)]));
-            // 测试进度条
-            let mut pb = tui::ProgressBar::new(100, 50);
-            for i in 0..=100 {
-                pb.update(i);
-                std::thread::sleep(std::time::Duration::from_millis(50));
-            }
-            pb.finish();
-            Ok(())
-        }
-        Command::Build => {
-            info!("{}", t("messages.building_project"));
-            // 测试加载动画
-            tui::loading_animation(std::time::Duration::from_secs(3), "构建中...");
-            Ok(())
-        }
-        Command::Dev => {
-            info!("{}", t("messages.starting_dev_server"));
-            // 测试交互式选择菜单
-            let items = ["选项 1", "选项 2", "选项 3"];
-            if let Some(choice) = tui::select(&items, "请选择一个选项:") {
-                info!("选择了: {}", items[choice]);
-            }
-            Ok(())
-        }
-        Command::Check => {
-            info!("{}", t("messages.checking_project"));
-            // 测试进度条
-            let mut pb = tui::ProgressBar::new(50, 30);
-            for i in 0..=50 {
-                pb.update(i);
-                std::thread::sleep(std::time::Duration::from_millis(100));
-            }
-            pb.finish();
-            Ok(())
-        }
-    }
-}
-
-/// 测试宏功能
-pub mod test_macro;
-pub use test_macro::test_macro;

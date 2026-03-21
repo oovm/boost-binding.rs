@@ -7,9 +7,6 @@
 use std::error::Error;
 use tracing::info;
 
-/// 国际化功能 - 使用 itools-localization 模块的国际化实现
-pub use itools_localization::{t, t_with_args};
-
 /// 命令行参数解析 trait
 pub trait Parse {
     /// 从命令行参数中解析当前类型
@@ -20,7 +17,7 @@ pub trait Parse {
 impl Parse for String {
     fn parse(args: &mut Vec<String>) -> Self {
         if args.is_empty() {
-            panic!("{}", t("errors.expected_string_argument"));
+            panic!("Expected string argument");
         }
         args.remove(0)
     }
@@ -30,9 +27,9 @@ impl Parse for String {
 impl Parse for i32 {
     fn parse(args: &mut Vec<String>) -> Self {
         if args.is_empty() {
-            panic!("{}", t("errors.expected_integer_argument"));
+            panic!("Expected integer argument");
         }
-        args.remove(0).parse().expect(&t("errors.invalid_integer"))
+        args.remove(0).parse().expect("Invalid integer")
     }
 }
 
@@ -40,9 +37,9 @@ impl Parse for i32 {
 impl Parse for u32 {
     fn parse(args: &mut Vec<String>) -> Self {
         if args.is_empty() {
-            panic!("{}", t("errors.expected_unsigned_integer_argument"));
+            panic!("Expected unsigned integer argument");
         }
-        args.remove(0).parse().expect(&t("errors.invalid_unsigned_integer"))
+        args.remove(0).parse().expect("Invalid unsigned integer")
     }
 }
 
@@ -50,9 +47,9 @@ impl Parse for u32 {
 impl Parse for bool {
     fn parse(args: &mut Vec<String>) -> Self {
         if args.is_empty() {
-            panic!("{}", t("errors.expected_boolean_argument"));
+            panic!("Expected boolean argument");
         }
-        args.remove(0).parse().expect(&t("errors.invalid_boolean"))
+        args.remove(0).parse().expect("Invalid boolean")
     }
 }
 
@@ -90,7 +87,7 @@ impl Parse for Cli {
 impl Parse for Command {
     fn parse(args: &mut Vec<String>) -> Self {
         if args.is_empty() {
-            panic!("{}", t("errors.expected_command"));
+            panic!("Expected command");
         }
         let cmd = args.remove(0);
         match cmd.as_str() {
@@ -98,7 +95,7 @@ impl Parse for Command {
             "build" => Self::Build,
             "dev" => Self::Dev,
             "check" => Self::Check,
-            _ => panic!("{}", t_with_args("errors.unknown_command", &[("command", &cmd)])),
+            _ => panic!("Unknown command: {}", cmd),
         }
     }
 }
@@ -108,14 +105,14 @@ pub fn init_cli() {
     // 初始化日志
     tracing_subscriber::fmt().with_env_filter(tracing_subscriber::EnvFilter::from_default_env()).init();
 
-    info!("{}", t("messages.cli_initialized"));
+    info!("CLI initialized");
 }
 
 /// 执行命令
 pub fn execute_command(cli: Cli) -> Result<(), Box<dyn Error>> {
     match cli.command {
         Command::Init { name } => {
-            info!("{}", t_with_args("messages.initializing_project", &[("name", &name)]));
+            info!("Initializing project: {}", name);
             // 测试进度条
             let mut pb = itools_tui::components::ProgressBar::new(100, 50);
             for i in 0..=100 {
@@ -126,22 +123,22 @@ pub fn execute_command(cli: Cli) -> Result<(), Box<dyn Error>> {
             Ok(())
         }
         Command::Build => {
-            info!("{}", t("messages.building_project"));
+            info!("Building project");
             // 测试加载动画
-            itools_tui::utils::loading_animation(std::time::Duration::from_secs(3), "构建中...");
+            itools_tui::utils::loading_animation(std::time::Duration::from_secs(3), "Building...");
             Ok(())
         }
         Command::Dev => {
-            info!("{}", t("messages.starting_dev_server"));
+            info!("Starting dev server");
             // 测试交互式选择菜单
-            let items = ["选项 1", "选项 2", "选项 3"];
-            if let Some(choice) = itools_tui::components::select(&items, "请选择一个选项:") {
-                info!("选择了: {}", items[choice]);
+            let items = ["Option 1", "Option 2", "Option 3"];
+            if let Some(choice) = itools_tui::components::select(&items, "Please select an option:") {
+                info!("Selected: {}", items[choice]);
             }
             Ok(())
         }
         Command::Check => {
-            info!("{}", t("messages.checking_project"));
+            info!("Checking project");
             // 测试进度条
             let mut pb = itools_tui::components::ProgressBar::new(50, 30);
             for i in 0..=50 {
