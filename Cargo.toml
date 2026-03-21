@@ -16,12 +16,11 @@ repository = "https://github.com/oovm/iTools"
 readme = "readme.md"
 
 [workspace.dependencies]
-itools-walker = { path = "compilers/itools-walker", version = "0.0.0" }
 serde = { version = "1.0.228", features = ["derive", "rc"] }
 serde_json = { version = "1.0.149" }
 serde_yaml = { version = "0.9.34" }
 schemars = { version = "1.2.1", features = ["derive"] }
-toml = "0.8"
+toml = "1.0.7+spec-1.1.0"
 crossterm = "0.29.0"
 fluent = "0.16.0"
 fluent-syntax = "0.12.0"
@@ -43,7 +42,7 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 dashmap = { version = "6.1.0" }
 lazy_static = "1.5.0"
 itertools = "0.14.0"
-notify = { version = "6.1.1", default-features = false, features = ["crossbeam-channel"] }
+notify = { version = "8.2.0", default-features = false, features = ["crossbeam-channel"] }
 unicode-width = "0.2.2"
 arcstr = { version = "1.2.0", features = ["serde"] }
 indexmap = { version = "2.13.0", features = ["serde"] }
@@ -69,8 +68,9 @@ mime_guess = "2.0.4"
 # iTools dependencies
 itools = { path = "compilers/itools", version = "0.0.0" }
 itools-core = { path = "compilers/itools-core", version = "0.0.0" }
-itools-config = { path = "compilers/itools-config", version = "0.0.0" }
 itools-macros = { path = "compilers/itools-macros", version = "0.0.0" }
+itools-config = { path = "compilers/itools-config", version = "0.0.0" }
+itools-walker = { path = "compilers/itools-walker", version = "0.0.0" }
 itools-localization = { path = "compilers/itools-localization", version = "0.0.0" }
 
 # Oak parsers
