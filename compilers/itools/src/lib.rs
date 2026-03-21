@@ -104,7 +104,7 @@ impl Parse for Command {
             "build" => Self::Build,
             "dev" => Self::Dev,
             "check" => Self::Check,
-            _ => panic!("{}", t!("errors.unknown_command", &[("command", &cmd)])),
+            _ => panic!("{}", t!("errors.unknown_command")),
         }
     }
 }
@@ -342,7 +342,7 @@ impl Builder {
 pub fn execute_command(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Command::Init { name } => {
-            info!("{}", t!("messages.initializing_project", &[("name", &name)]));
+            info!("{}", t!("messages.initializing_project"));
             // 测试进度条
             let mut pb = tui::ProgressBar::new(100, 50);
             for i in 0..=100 {
