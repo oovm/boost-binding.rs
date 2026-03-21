@@ -8,23 +8,45 @@ use std::{collections::HashMap, path::Path, num::NonZeroUsize};
 use tracing::info;
 
 /// 国际化错误类型
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum I18nError {
     /// 文件读取错误
-    #[error("Failed to read file: {0}")]
-    FileRead(#[from] std::io::Error),
+    FileRead(std::io::Error),
     /// 解析错误
-    #[error("Failed to parse content: {0}")]
     ParseError(String),
     /// 不支持的文件格式
-    #[error("Unsupported file format: {0}")]
     UnsupportedFormat(String),
     /// 特性未启用
-    #[error("Feature not enabled: {0}")]
     FeatureNotEnabled(String),
     /// 翻译未找到
-    #[error("Translation not found: {0}")]
     TranslationNotFound(String),
+}
+
+impl std::error::Error for I18nError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            I18nError::FileRead(err) => Some(err),
+            _ => None,
+        }
+    }
+}
+
+impl std::fmt::Display for I18nError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            I18nError::FileRead(err) => write!(f, "Failed to read file: {}", err),
+            I18nError::ParseError(err) => write!(f, "Failed to parse content: {}", err),
+            I18nError::UnsupportedFormat(format) => write!(f, "Unsupported file format: {}", format),
+            I18nError::FeatureNotEnabled(feature) => write!(f, "Feature not enabled: {}", feature),
+            I18nError::TranslationNotFound(key) => write!(f, "Translation not found: {}", key),
+        }
+    }
+}
+
+impl From<std::io::Error> for I18nError {
+    fn from(err: std::io::Error) -> Self {
+        I18nError::FileRead(err)
+    }
 }
 
 // 导入 oak-fluent 库

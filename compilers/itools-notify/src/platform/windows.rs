@@ -21,6 +21,9 @@ struct SendableHandle(HANDLE);
 /// 为 SendableHandle 实现 Send trait
 unsafe impl Send for SendableHandle {}
 
+/// 为 SendableHandle 实现 Sync trait
+unsafe impl Sync for SendableHandle {}
+
 /// Windows 平台的文件系统监控器
 pub struct WindowsWatcher {
     event_receiver: mpsc::Receiver<FileSystemEvent>,
@@ -78,14 +81,17 @@ impl Watcher for WindowsWatcher {
         
         // 打开目录句柄
         let handle = self.open_directory(&path)?;
-        let sendable_handle = SendableHandle(handle);
         
         // 启动监控线程
         let event_sender = self.event_sender.clone();
         let path_clone = path.clone();
         
+        // 将 HANDLE 转换为 isize 以在线程间安全传递
+        let handle_ptr = handle as isize;
+        
         thread::spawn(move || {
-            let handle = sendable_handle.0;
+            // 将 isize 转换回 HANDLE
+            let handle = handle_ptr as HANDLE;
             let mut buffer = [0u8; 4096];
             
             loop {
