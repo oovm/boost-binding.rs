@@ -7,13 +7,19 @@ use std::sync::mpsc;
 use std::thread;
 
 use winapi::shared::minwindef::{BOOL, DWORD};
-use winapi::um::fileapi::CreateFileW;
+use winapi::um::fileapi::{CreateFileW, OPEN_EXISTING};
 use winapi::um::handleapi::{CloseHandle, INVALID_HANDLE_VALUE};
-use winapi::um::winbase::{ReadDirectoryChangesW, FILE_FLAG_BACKUP_SEMANTICS, OPEN_EXISTING};
+use winapi::um::winbase::{ReadDirectoryChangesW, FILE_FLAG_BACKUP_SEMANTICS};
 use winapi::um::winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_GENERIC_READ, HANDLE};
 use winapi::um::winnt::{FILE_NOTIFY_INFORMATION, FILE_ACTION_ADDED, FILE_ACTION_REMOVED, FILE_ACTION_MODIFIED, FILE_ACTION_RENAMED_OLD_NAME, FILE_ACTION_RENAMED_NEW_NAME};
 
 use crate::{FileSystemEvent, Watcher};
+
+/// 包装 HANDLE 以实现 Send trait，因为 Windows HANDLE 可以安全在线程间传递
+struct SendableHandle(HANDLE);
+
+/// 为 SendableHandle 实现 Send trait
+unsafe impl Send for SendableHandle {}
 
 /// Windows 平台的文件系统监控器
 pub struct WindowsWatcher {
@@ -72,12 +78,14 @@ impl Watcher for WindowsWatcher {
         
         // 打开目录句柄
         let handle = self.open_directory(&path)?;
+        let sendable_handle = SendableHandle(handle);
         
         // 启动监控线程
         let event_sender = self.event_sender.clone();
         let path_clone = path.clone();
         
         thread::spawn(move || {
+            let handle = sendable_handle.0;
             let mut buffer = [0u8; 4096];
             
             loop {
