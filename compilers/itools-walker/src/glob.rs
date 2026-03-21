@@ -1,17 +1,13 @@
-use oak_glob::{parse, ast::GlobRoot};
-
 /// Glob 模式
 #[derive(Debug, Clone)]
 pub struct Glob {
     pattern: String,
-    ast: GlobRoot,
 }
 
 impl Glob {
     /// 创建新的 Glob 模式
     pub fn new(pattern: &str) -> Result<Self, String> {
-        let ast = parse(pattern)?;
-        Ok(Self { pattern: pattern.to_string(), ast })
+        Ok(Self { pattern: pattern.to_string() })
     }
 
     /// 匹配路径

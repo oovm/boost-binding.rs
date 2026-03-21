@@ -10,9 +10,9 @@ default-members = [
 version = "0.0.0"
 authors = ["Aster <192607617@qq.com&gt;"]
 edition = "2024"
-license = "AGPL-3.0"
-homepage = "https://github.com/oovm/RustTemplate"
-repository = "https://github.com/oovm/RustTemplate"
+license = "Apache-2.0"
+homepage = "https://github.com/oovm/iTools"
+repository = "https://github.com/oovm/iTools"
 readme = "readme.md"
 
 [workspace.dependencies]
@@ -28,6 +28,8 @@ fluent-syntax = "0.12.0"
 fluent-bundle = "0.16.0"
 unic-langid = { version = "0.9.0", features = ["unic-langid-macros"] }
 lru = "0.7"
+tokio = { version = "1.36" }
+futures = "0.3"
 
 tracing = { version = "0.1.44" }
 unicode-ident = { version = "1.0.24" }
@@ -43,9 +45,7 @@ lazy_static = "1.5.0"
 itertools = "0.14.0"
 notify = { version = "6.1.1", default-features = false, features = ["crossbeam-channel"] }
 unicode-width = "0.2.2"
-
 arcstr = { version = "1.2.0", features = ["serde"] }
-wae-https = { path = "../wae/backends/wae-https" }
 indexmap = { version = "2.13.0", features = ["serde"] }
 im-rc = "15.1.0"
 num = "0.4.3"
@@ -68,19 +68,22 @@ mime_guess = "2.0.4"
 
 # iTools dependencies
 itools = { path = "compilers/itools", version = "0.0.0" }
+itools-core = { path = "compilers/itools-core", version = "0.0.0" }
 itools-config = { path = "compilers/itools-config", version = "0.0.0" }
 itools-macros = { path = "compilers/itools-macros", version = "0.0.0" }
 itools-localization = { path = "compilers/itools-localization", version = "0.0.0" }
-itools-core = { path = "compilers/itools-core", version = "0.0.0" }
-
 
 # Oak parsers
-oak-core = { version = "0.0.7", git = "https://github.com/ygg-lang/oaks.git", branch = "dev" }
-oak-toml = { version = "0.0.7", git = "https://github.com/ygg-lang/oaks.git", branch = "dev" }
-oak-yaml = { version = "0.0.7", git = "https://github.com/ygg-lang/oaks.git", branch = "dev" }
-oak-json = { version = "0.0.7", git = "https://github.com/ygg-lang/oaks.git", branch = "dev" }
-oak-vfs = { version = "0.0.7", git = "https://github.com/ygg-lang/oaks.git", branch = "dev" }
-oak-markdown = { version = "0.0.7", git = "https://github.com/ygg-lang/oaks.git", branch = "dev" }
+oak-core = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
+oak-vfs = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
+oak-toml = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
+oak-yaml = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
+oak-json = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
+oak-markdown = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
+oak-glob = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
+oak-fluent = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
+
+wae-https = { path = "../wae/backends/wae-https" }
 
 [profile.release]
 panic = "abort"

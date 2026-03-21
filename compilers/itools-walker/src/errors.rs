@@ -38,8 +38,6 @@ impl From<std::io::Error> for WalkError {
     }
 }
 
-
-
 impl From<AcquireError> for WalkError {
     fn from(err: AcquireError) -> Self {
         WalkError::Acquire(err)

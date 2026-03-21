@@ -86,7 +86,7 @@ impl Walker {
         let mut walker = Self { options, glob_set: None };
         #[cfg(not(feature = "glob"))]
         let walker = Self { options };
-        
+
         #[cfg(feature = "glob")]
         walker.build_glob_set()?;
         Ok(walker)
@@ -104,7 +104,7 @@ impl Walker {
     fn should_include(&self, path: &Path) -> bool {
         glob::should_include(path, &self.glob_set)
     }
-    
+
     /// 检查路径是否应该被包含（无 glob 功能）
     #[cfg(not(feature = "glob"))]
     fn should_include(&self, _path: &Path) -> bool {
@@ -133,7 +133,10 @@ impl Walker {
     ///     }
     /// }
     /// ```
-    pub async fn walk<P: AsRef<Path>>(&self, path: P) -> Result<impl Stream<Item = Result<WalkEntry, WalkError>> + use<P>, WalkError> {
+    pub async fn walk<P: AsRef<Path>>(
+        &self,
+        path: P,
+    ) -> Result<impl Stream<Item = Result<WalkEntry, WalkError>> + use<P>, WalkError> {
         let path = path.as_ref().to_path_buf();
         let (tx, rx) = mpsc::channel(self.options.channel_size);
 

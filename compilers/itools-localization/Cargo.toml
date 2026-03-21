@@ -20,7 +20,7 @@ serde_json = { workspace = true }
 lru = { workspace = true }
 
 # Oak Fluent support
-oak-fluent = { path = "../../../oaks/examples/oak-fluent", optional = true }
+oak-fluent = { workspace = true, optional = true }
 
 [features]
 default = []

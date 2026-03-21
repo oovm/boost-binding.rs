@@ -1,23 +1,23 @@
 [package]
 name = "itools-walker"
-version = "0.0.0"
-authors = ["Aster <192607617@qq.com>"]
-edition = "2024"
-license = "AGPL-3.0"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 homepage = "https://github.com/oovm/RustTemplate"
 repository = "https://github.com/oovm/RustTemplate"
 readme = "readme.md"
 
 [dependencies]
-tokio = { version = "1.36", features = ["fs", "io-util", "sync", "rt", "rt-multi-thread"] }
-futures = "0.3"
+tokio = { workspace = true, features = ["fs", "io-util", "sync", "rt", "rt-multi-thread"] }
+futures = { workspace = true }
 
 [features]
 default = []
 glob = ["oak-glob"]
 
 [dependencies.oak-glob]
-path = "../../../oaks/examples/oak-glob"
+workspace = true
 optional = true
 
 [dev-dependencies]
