@@ -6,6 +6,8 @@ edition = { workspace = true }
 license = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }
+description = "iTools - A powerful toolkit for Rust developers"
+
 
 [dependencies]
 tracing = { workspace = true }

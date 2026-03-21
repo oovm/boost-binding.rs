@@ -6,6 +6,8 @@ edition = { workspace = true }
 license = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }
+description = "Proc macros for iTools, including command and error generation"
+
 
 
 [lib]

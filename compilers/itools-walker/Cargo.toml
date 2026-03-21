@@ -7,6 +7,8 @@ license = { workspace = true }
 homepage = "https://github.com/oovm/RustTemplate"
 repository = "https://github.com/oovm/RustTemplate"
 readme = "readme.md"
+description = "Asynchronous directory walker for iTools"
+
 
 [dependencies]
 tokio = { workspace = true, features = ["fs", "io-util", "sync", "rt", "rt-multi-thread"] }
