@@ -30,8 +30,9 @@ yaml = ["oak-yaml"]
 
 [dev-dependencies]
 assert_matches = "1.5"
-criterion = "0.5"
+criterion = "0.8"
 figment = { version = "0.10", features = ["json", "toml", "yaml"] }
+tempfile = "3.27"
 
 [[bench]]
 name = "merge_benchmark"

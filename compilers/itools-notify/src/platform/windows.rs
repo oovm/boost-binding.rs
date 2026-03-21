@@ -9,8 +9,8 @@ use std::thread;
 use winapi::shared::minwindef::{BOOL, DWORD};
 use winapi::um::fileapi::CreateFileW;
 use winapi::um::handleapi::{CloseHandle, INVALID_HANDLE_VALUE};
-use winapi::um::winbase::{FILE_FLAG_BACKUP_SEMANTICS, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING, ReadDirectoryChangesW};
-use winapi::um::winnt::{FILE_GENERIC_READ, HANDLE};
+use winapi::um::winbase::{ReadDirectoryChangesW, FILE_FLAG_BACKUP_SEMANTICS, OPEN_EXISTING};
+use winapi::um::winnt::{FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_GENERIC_READ, HANDLE};
 use winapi::um::winnt::{FILE_NOTIFY_INFORMATION, FILE_ACTION_ADDED, FILE_ACTION_REMOVED, FILE_ACTION_MODIFIED, FILE_ACTION_RENAMED_OLD_NAME, FILE_ACTION_RENAMED_NEW_NAME};
 
 use crate::{FileSystemEvent, Watcher};
@@ -85,17 +85,17 @@ impl Watcher for WindowsWatcher {
                 let success = unsafe {
                     ReadDirectoryChangesW(
                         handle,
-                        buffer.as_mut_ptr() as *mut FILE_NOTIFY_INFORMATION,
+                        buffer.as_mut_ptr() as *mut _, 
                         buffer.len() as DWORD,
                         recursive as BOOL,
                         0x00000001 | 0x00000002 | 0x00000004 | 0x00000008 | 0x00000010 | 0x00000020,
                         &mut bytes_returned,
                         std::ptr::null_mut(),
-                        std::ptr::null_mut(),
+                        None
                     )
                 };
                 
-                if !success {
+                if success == 0 {
                     break;
                 }
                 
@@ -104,7 +104,9 @@ impl Watcher for WindowsWatcher {
                 while offset < bytes_returned as usize {
                     let info = unsafe { &*(buffer.as_ptr().add(offset) as *const FILE_NOTIFY_INFORMATION) };
                     let file_name = unsafe {
-                        OsString::from_wide(std::slice::from_raw_parts(info.FileName, info.FileNameLength as usize / 2))
+                        let file_name_ptr = info.FileName.as_ptr() as *const u16;
+                        let file_name_slice = std::slice::from_raw_parts(file_name_ptr, info.FileNameLength as usize / 2);
+                        OsString::from_wide(file_name_slice)
                     };
                     let full_path = path_clone.join(file_name);
                     
@@ -154,21 +156,24 @@ impl Watcher for WindowsWatcher {
     
     fn next_event(&mut self) -> Result<Option<FileSystemEvent>, Self::Error> {
         // 从通道接收事件
-        while let Ok(event) = self.event_receiver.recv() {
-            // 应用过滤器
-            let mut filtered = false;
-            for filter in &self.filters {
-                if filter.should_filter(&event) {
-                    filtered = true;
-                    break;
+        match self.event_receiver.recv() {
+            Ok(event) => {
+                // 应用过滤器
+                let mut filtered = false;
+                for filter in &self.filters {
+                    if filter.should_filter(&event) {
+                        filtered = true;
+                        break;
+                    }
                 }
-            }
-            
-            if !filtered {
-                return Ok(Some(event));
-            }
+                
+                if !filtered {
+                    Ok(Some(event))
+                } else {
+                    self.next_event()
+                }
+            },
+            Err(_) => Ok(None)
         }
-        
-        Ok(None)
     }
 }

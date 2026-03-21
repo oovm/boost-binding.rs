@@ -26,7 +26,7 @@ pub trait Parse {
 impl Parse for String {
     fn parse(args: &mut Vec<String>) -> Self {
         if args.is_empty() {
-            panic!("{}", t("errors.expected_string_argument"));
+            panic!("{}", t!("errors.expected_string_argument"));
         }
         args.remove(0)
     }
@@ -36,9 +36,9 @@ impl Parse for String {
 impl Parse for i32 {
     fn parse(args: &mut Vec<String>) -> Self {
         if args.is_empty() {
-            panic!("{}", t("errors.expected_integer_argument"));
+            panic!("{}", t!("errors.expected_integer_argument"));
         }
-        args.remove(0).parse().expect(&t("errors.invalid_integer"))
+        args.remove(0).parse().expect(&t!("errors.invalid_integer"))
     }
 }
 
@@ -46,9 +46,9 @@ impl Parse for i32 {
 impl Parse for u32 {
     fn parse(args: &mut Vec<String>) -> Self {
         if args.is_empty() {
-            panic!("{}", t("errors.expected_unsigned_integer_argument"));
+            panic!("{}", t!("errors.expected_unsigned_integer_argument"));
         }
-        args.remove(0).parse().expect(&t("errors.invalid_unsigned_integer"))
+        args.remove(0).parse().expect(&t!("errors.invalid_unsigned_integer"))
     }
 }
 
@@ -56,9 +56,9 @@ impl Parse for u32 {
 impl Parse for bool {
     fn parse(args: &mut Vec<String>) -> Self {
         if args.is_empty() {
-            panic!("{}", t("errors.expected_boolean_argument"));
+            panic!("{}", t!("errors.expected_boolean_argument"));
         }
-        args.remove(0).parse().expect(&t("errors.invalid_boolean"))
+        args.remove(0).parse().expect(&t!("errors.invalid_boolean"))
     }
 }
 
@@ -96,7 +96,7 @@ impl Parse for Cli {
 impl Parse for Command {
     fn parse(args: &mut Vec<String>) -> Self {
         if args.is_empty() {
-            panic!("{}", t("errors.expected_command"));
+            panic!("{}", t!("errors.expected_command"));
         }
         let cmd = args.remove(0);
         match cmd.as_str() {
@@ -104,7 +104,7 @@ impl Parse for Command {
             "build" => Self::Build,
             "dev" => Self::Dev,
             "check" => Self::Check,
-            _ => panic!("{}", t_with_args("errors.unknown_command", &[("command", &cmd)])),
+            _ => panic!("{}", t!("errors.unknown_command", &[("command", &cmd)])),
         }
     }
 }
@@ -114,7 +114,7 @@ pub fn init_cli() {
     // 初始化日志
     tracing_subscriber::fmt().with_env_filter(tracing_subscriber::EnvFilter::from_default_env()).init();
 
-    info!("{}", t("messages.cli_initialized"));
+    info!("{}", t!("messages.cli_initialized"));
 }
 
 /// TUI 功能模块
@@ -342,7 +342,7 @@ impl Builder {
 pub fn execute_command(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Command::Init { name } => {
-            info!("{}", t_with_args("messages.initializing_project", &[("name", &name)]));
+            info!("{}", t!("messages.initializing_project", &[("name", &name)]));
             // 测试进度条
             let mut pb = tui::ProgressBar::new(100, 50);
             for i in 0..=100 {
@@ -353,13 +353,13 @@ pub fn execute_command(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Command::Build => {
-            info!("{}", t("messages.building_project"));
+            info!("{}", t!("messages.building_project"));
             // 测试加载动画
             tui::loading_animation(std::time::Duration::from_secs(3), "构建中...");
             Ok(())
         }
         Command::Dev => {
-            info!("{}", t("messages.starting_dev_server"));
+            info!("{}", t!("messages.starting_dev_server"));
             // 测试交互式选择菜单
             let items = ["选项 1", "选项 2", "选项 3"];
             if let Some(choice) = tui::select(&items, "请选择一个选项:") {
@@ -368,7 +368,7 @@ pub fn execute_command(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Command::Check => {
-            info!("{}", t("messages.checking_project"));
+            info!("{}", t!("messages.checking_project"));
             // 测试进度条
             let mut pb = tui::ProgressBar::new(50, 30);
             for i in 0..=50 {

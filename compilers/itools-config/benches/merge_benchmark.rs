@@ -3,6 +3,7 @@ use itools_config::ConfigManager;
 use figment::{Figment, providers::{Json, Toml, Yaml, Format}};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use tempfile::NamedTempFile;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct TestConfig {
@@ -91,20 +92,29 @@ server:
 fn benchmark_merge(c: &mut Criterion) {
     let (json_config, toml_config, yaml_config) = create_test_configs();
 
+    // 创建带有扩展名的临时文件
+    let json_file = NamedTempFile::with_suffix(".json").unwrap();
+    let toml_file = NamedTempFile::with_suffix(".toml").unwrap();
+    let yaml_file = NamedTempFile::with_suffix(".yaml").unwrap();
+
     // 写入临时文件
-    std::fs::write("test_config.json", json_config).unwrap();
-    std::fs::write("test_config.toml", toml_config).unwrap();
-    std::fs::write("test_config.yaml", yaml_config).unwrap();
+    std::fs::write(json_file.path(), json_config).unwrap();
+    std::fs::write(toml_file.path(), toml_config).unwrap();
+    std::fs::write(yaml_file.path(), yaml_config).unwrap();
+
+    let json_path = json_file.path();
+    let toml_path = toml_file.path();
+    let yaml_path = yaml_file.path();
 
     let mut group = c.benchmark_group("merge");
 
     // 基准测试 itools-config
-    group.bench_function("itools_config_merge", |b| {
+    group.bench_function("itools_merge", |b| {
         b.iter(|| {
             let mut config_manager = ConfigManager::new();
-            config_manager.load_fragment(Path::new("test_config.json")).unwrap();
-            config_manager.load_fragment(Path::new("test_config.toml")).unwrap();
-            config_manager.load_fragment(Path::new("test_config.yaml")).unwrap();
+            config_manager.load_fragment(json_path).unwrap();
+            config_manager.load_fragment(toml_path).unwrap();
+            config_manager.load_fragment(yaml_path).unwrap();
             black_box(config_manager.get_config());
         });
     });
@@ -113,9 +123,9 @@ fn benchmark_merge(c: &mut Criterion) {
     group.bench_function("figment_merge", |b| {
         b.iter(|| {
             let figment = Figment::new()
-                .merge(Json::file("test_config.json"))
-                .merge(Toml::file("test_config.toml"))
-                .merge(Yaml::file("test_config.yaml"));
+                .merge(Json::file(json_path))
+                .merge(Toml::file(toml_path))
+                .merge(Yaml::file(yaml_path));
             let config: TestConfig = figment.extract().unwrap();
             black_box(config);
         });
@@ -123,10 +133,7 @@ fn benchmark_merge(c: &mut Criterion) {
 
     group.finish();
 
-    // 清理临时文件
-    std::fs::remove_file("test_config.json").unwrap();
-    std::fs::remove_file("test_config.toml").unwrap();
-    std::fs::remove_file("test_config.yaml").unwrap();
+    // 临时文件会在作用域结束时自动删除
 }
 
 criterion_group!(benches, benchmark_merge);

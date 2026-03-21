@@ -239,6 +239,13 @@ impl ConfigManager {
         }
     }
 
+    /// 添加默认配置值
+    pub fn add_defaults(&mut self, defaults: serde_json::Value) {
+        let fragment = ConfigFragment { data: defaults, priority: 0 };
+        self.fragments.push(fragment);
+        self.merge_configs();
+    }
+
     /// 设置配置值
     fn set_config_value(&mut self, key_path: &str, value: &str) {
         let keys: Vec<&str> = key_path.split('.').collect();

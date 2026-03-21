@@ -59,7 +59,7 @@
   - `programmatic` TR-5.2: 确认 Cargo.toml 中不再包含 unic-langid 依赖
 - **Notes**: 确保其他依赖项保持不变
 
-## [/] Task 6: 运行测试，确保功能正常
+## [x] Task 6: 运行测试，确保功能正常
 - **Priority**: P0
 - **Depends On**: Task 4, Task 5
 - **Description**:
@@ -72,7 +72,7 @@
   - `programmatic` TR-6.2: 国际化功能正常工作
 - **Notes**: 确保构建过程无错误
 
-## [ ] Task 7: 清理代码，移除不必要的注释和条件编译
+## [x] Task 7: 清理代码，移除不必要的注释和条件编译
 - **Priority**: P1
 - **Depends On**: Task 6
 - **Description**:

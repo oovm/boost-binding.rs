@@ -1,6 +1,6 @@
-# iTools
+# iTools CLI
 
-🛠️ iTools 是一个强大的 Rust 开发工具包，提供命令行接口和国际化支持。
+🛠️ iTools CLI 是一个强大的 Rust 开发工具包，提供命令行接口和国际化支持。
 
 ## 特性
 

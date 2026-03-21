@@ -29,51 +29,18 @@ readme = "readme.md"
 serde = { version = "1.0.228", features = ["derive", "rc"] }
 serde_json = { version = "1.0.149" }
 serde_yaml = { version = "0.9.34" }
-schemars = { version = "1.2.1", features = ["derive"] }
 toml = "1.0.7+spec-1.1.0"
 crossterm = "0.29.0"
-fluent = "0.16.0"
-fluent-syntax = "0.12.0"
-fluent-bundle = "0.16.0"
-unic-langid = { version = "0.9.0", features = ["unic-langid-macros"] }
-lru = "0.7"
-tokio = { version = "1.36" }
+lru = "0.16"
+tokio = { version = "1.50" }
 futures = "0.3"
 
 tracing = { version = "0.1.44" }
-unicode-ident = { version = "1.0.24" }
-url = { version = "2.5.8", features = ["serde"] }
-triomphe = { version = "0.1.15", default-features = false, features = ["serde"] }
-smallvec = { version = "1.15", features = ["union", "const_generics", "const_new"] }
 proc-macro2 = { version = "1.0.106" }
 quote = { version = "1.0.45" }
 syn = { version = "2.0.117", features = ["full"] }
-tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
-dashmap = { version = "6.1.0" }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 lazy_static = "1.5.0"
-itertools = "0.14.0"
-notify = { version = "8.2.0", default-features = false, features = ["crossbeam-channel"] }
-unicode-width = "0.2.2"
-arcstr = { version = "1.2.0", features = ["serde"] }
-indexmap = { version = "2.13.0", features = ["serde"] }
-im-rc = "15.1.0"
-num = "0.4.3"
-bigdecimal = "0.4.10"
-ordered-float = "5.1.0"
-twox-hash = "2.1.2"
-regex = "1.12.0"
-base64 = "0.22.0"
-http = "1.3.1"
-tower = "0.5.2"
-tower-http = { version = "0.6.2", features = ["cors", "trace", "fs"] }
-semantic-id = { version = "0.0.0", features = ["serde"]}
-limbo = { version = "0.0.22", features = ["index_experimental"] }
-chrono = "0.4.0"
-console = "0.16.2"
-
-slug = "0.1.5"
-fs_extra = "1.3.0"
-mime_guess = "2.0.4"
 
 # iTools dependencies
 itools = { path = "compilers/itools", version = "0.0.0" }
@@ -85,15 +52,11 @@ itools-localization = { path = "compilers/itools-localization", version = "0.0.0
 
 # Oak parsers
 oak-core = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
-oak-vfs = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
 oak-toml = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
 oak-yaml = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
 oak-json = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
-oak-markdown = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
 oak-glob = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
 oak-fluent = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
-
-wae-https = { path = "../wae/backends/wae-https" }
 
 [profile.release]
 panic = "abort"

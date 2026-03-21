@@ -127,7 +127,7 @@ pub trait Watcher {
 /// # 返回值
 /// * `Ok(Box<dyn Watcher>)` - 成功创建监控器
 /// * `Err(String)` - 创建监控器失败
-pub fn new_watcher() -> Result<Box<dyn Watcher<Error = Box<dyn std::error::Error>>>, String> {
+pub fn new_watcher() -> Result<Box<dyn Watcher<Error = std::io::Error>>, String> {
     #[cfg(windows)]
     {
         match crate::platform::windows::WindowsWatcher::new() {
