@@ -4,7 +4,7 @@
 //! 
 //! 提供完整的国际化功能，包括翻译管理、语言切换和参数化翻译。
 
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::Path, num::NonZeroUsize};
 use tracing::info;
 
 /// 国际化错误类型
@@ -309,7 +309,7 @@ impl Clone for I18nContext {
     fn clone(&self) -> Self {
         Self {
             translator: self.translator.clone_box(),
-            translation_cache: lru::LruCache::new(self.cache_capacity),
+            translation_cache: lru::LruCache::new(NonZeroUsize::new(self.cache_capacity).unwrap()),
             cache_capacity: self.cache_capacity,
         }
     }
@@ -318,12 +318,12 @@ impl Clone for I18nContext {
 impl I18nContext {
     /// 创建新的国际化上下文
     pub fn new(translator: Box<dyn TranslationProvider + Send + Sync>) -> Self {
-        Self { translator, translation_cache: lru::LruCache::new(1000), cache_capacity: 1000 }
+        Self { translator, translation_cache: lru::LruCache::new(NonZeroUsize::new(1000).unwrap()), cache_capacity: 1000 }
     }
 
     /// 创建带有自定义缓存容量的国际化上下文
     pub fn with_cache_capacity(translator: Box<dyn TranslationProvider + Send + Sync>, capacity: usize) -> Self {
-        Self { translator, translation_cache: lru::LruCache::new(capacity), cache_capacity: capacity }
+        Self { translator, translation_cache: lru::LruCache::new(NonZeroUsize::new(capacity).unwrap()), cache_capacity: capacity }
     }
 
     /// 翻译一个键
