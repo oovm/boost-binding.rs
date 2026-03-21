@@ -1,12 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "compilers/itools",
-    "compilers/itools-core",
-    "compilers/itools-macros",
-    "compilers/itools-config",
-    "compilers/itools-walker",
-    "compilers/itools-localization",
+    "compilers/*",
 ]
 default-members = [
     "compilers/itools",
