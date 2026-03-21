@@ -160,10 +160,7 @@ impl Walker {
         });
 
         let stream = stream::unfold(rx, |mut rx| async move {
-            match rx.recv().await {
-                Some(item) => Some((item, rx)),
-                None => None,
-            }
+            rx.recv().await.map(|item| (item, rx))
         });
 
         Ok(stream)
@@ -199,10 +196,9 @@ impl Walker {
                 if self.should_include(&entry_path) {
                     let permit = semaphore.acquire().await?;
                     let tx_clone = tx.clone();
-                    let semaphore = semaphore;
                     let self_clone = self.clone();
 
-                    Box::pin(self_clone.walk_recursive(&entry_path, tx_clone, &semaphore)).await?;
+                    Box::pin(self_clone.walk_recursive(&entry_path, tx_clone, semaphore)).await?;
                     drop(permit);
                 }
             }

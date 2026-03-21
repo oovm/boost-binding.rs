@@ -25,6 +25,7 @@ use winapi::{
 use crate::{FileSystemEvent, Watcher};
 
 /// 包装 HANDLE 以实现 Send trait，因为 Windows HANDLE 可以安全在线程间传递
+#[allow(dead_code)]
 struct SendableHandle(HANDLE);
 
 /// 为 SendableHandle 实现 Send trait
@@ -122,7 +123,7 @@ impl Watcher for WindowsWatcher {
                 while offset < bytes_returned as usize {
                     let info = unsafe { &*(buffer.as_ptr().add(offset) as *const FILE_NOTIFY_INFORMATION) };
                     let file_name = unsafe {
-                        let file_name_ptr = info.FileName.as_ptr() as *const u16;
+                        let file_name_ptr = info.FileName.as_ptr();
                         let file_name_slice = std::slice::from_raw_parts(file_name_ptr, info.FileNameLength as usize / 2);
                         OsString::from_wide(file_name_slice)
                     };

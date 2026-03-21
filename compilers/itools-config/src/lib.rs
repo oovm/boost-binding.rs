@@ -5,6 +5,7 @@
 //! 提供基于 fragment 的配置解析功能，支持将配置文件分割成多个片段进行管理和加载。
 
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::{env, error::Error, fs, path::Path};
 use tracing::info;
 
@@ -61,7 +62,7 @@ impl Parse for bool {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ConfigFragment {
     /// 配置数据
-    pub data: serde_json::Value,
+    pub data: Value,
     /// 优先级
     pub priority: u32,
 }
@@ -72,13 +73,13 @@ pub struct ConfigManager {
     /// 配置片段
     fragments: Vec<ConfigFragment>,
     /// 合并后的配置
-    merged_config: serde_json::Value,
+    merged_config: Value,
 }
 
 impl ConfigManager {
     /// 创建新的配置管理器
     pub fn new() -> Self {
-        Self { fragments: Vec::new(), merged_config: serde_json::Value::Object(serde_json::Map::new()) }
+        Self { fragments: Vec::new(), merged_config: Value::Object(Map::new()) }
     }
 
     /// 加载配置片段
@@ -134,12 +135,12 @@ impl ConfigManager {
     }
 
     /// 验证配置
-    pub fn validate_config(&self, config: &serde_json::Value) -> Result<(), Box<dyn Error>> {
+    pub fn validate_config(&self, config: &Value) -> Result<(), Box<dyn Error>> {
         // 这里可以添加配置验证逻辑
         // 例如：检查必需的配置项、验证配置值的类型和范围等
 
         // 示例：检查是否存在必需的配置项
-        if let serde_json::Value::Object(_map) = config {
+        if let Value::Object(_map) = config {
             // 这里可以添加具体的验证逻辑
         }
 
@@ -181,7 +182,7 @@ impl ConfigManager {
         self.fragments.sort_by(|a, b| a.priority.cmp(&b.priority));
 
         // 初始化合并后的配置
-        self.merged_config = serde_json::Value::Object(serde_json::Map::new());
+        self.merged_config = Value::Object(Map::new());
 
         // 合并所有配置片段
         for fragment in &self.fragments {
@@ -190,9 +191,9 @@ impl ConfigManager {
     }
 
     /// 合并两个值
-    fn merge_values(&self, target: serde_json::Value, source: serde_json::Value) -> serde_json::Value {
+    fn merge_values(&self, target: Value, source: Value) -> Value {
         match (target, source) {
-            (serde_json::Value::Object(mut target_map), serde_json::Value::Object(source_map)) => {
+            (Value::Object(mut target_map), Value::Object(source_map)) => {
                 for (key, source_value) in source_map {
                     if target_map.contains_key(&key) {
                         let target_value = target_map.remove(&key).unwrap();

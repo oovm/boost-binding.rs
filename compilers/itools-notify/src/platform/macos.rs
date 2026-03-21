@@ -13,7 +13,7 @@ pub struct MacOSWatcher {
 
 impl MacOSWatcher {
     /// 创建新的 macOS 监控器
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new() -> Result<Self, std::io::Error> {
         let (event_sender, event_receiver) = mpsc::channel();
 
         Ok(Self { event_receiver, watch_paths: Vec::new(), filters: Vec::new() })
@@ -21,10 +21,9 @@ impl MacOSWatcher {
 }
 
 impl Watcher for MacOSWatcher {
-    type Error = Box<dyn std::error::Error>;
+    type Error = std::io::Error;
 
-    fn watch<P: Into<PathBuf>>(&mut self, path: P, recursive: bool) -> Result<(), Self::Error> {
-        let path = path.into();
+    fn watch(&mut self, path: PathBuf, _recursive: bool) -> Result<(), Self::Error> {
         self.watch_paths.push(path.clone());
 
         // 这里将实现具体的监控逻辑
@@ -32,8 +31,7 @@ impl Watcher for MacOSWatcher {
         Ok(())
     }
 
-    fn unwatch<P: Into<PathBuf>>(&mut self, path: P) -> Result<(), Self::Error> {
-        let path = path.into();
+    fn unwatch(&mut self, path: PathBuf) -> Result<(), Self::Error> {
         self.watch_paths.retain(|p| p != &path);
 
         // 这里将实现具体的停止监控逻辑
