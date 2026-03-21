@@ -12,16 +12,13 @@ license = { workspace = true }
 lazy_static = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 oak-json = { workspace = true, optional = true }
+oak-toml = { workspace = true, optional = true }
+oak-yaml = { workspace = true, optional = true }
 lru = { workspace = true }
 
 # Oak Fluent support
 oak-fluent = { workspace = true }
-
-# Oak parsers support
-oak-toml = { workspace = true, optional = true }
-oak-yaml = { workspace = true, optional = true }
 
 [features]
 default = ["json", "toml", "yaml"]

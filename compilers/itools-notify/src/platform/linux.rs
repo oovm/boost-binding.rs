@@ -47,6 +47,7 @@ impl LinuxWatcher {
 
                     if name_length > 0 {
                         let name = unsafe {
+                            use std::os::unix::ffi::OsStringExt;
                             std::ffi::OsString::from_vec(
                                 buffer[offset + std::mem::size_of::<libc::inotify_event>()
                                     ..offset + std::mem::size_of::<libc::inotify_event>() + name_length]

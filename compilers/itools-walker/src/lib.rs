@@ -246,10 +246,9 @@ impl Walker {
 
                 if self.should_include(&entry_path) {
                     let permit = semaphore.acquire().await?;
-                    let semaphore = semaphore;
                     let self_clone = self.clone();
 
-                    Box::pin(self_clone.walk_with_recursive(&entry_path, callback, &semaphore)).await?;
+                    Box::pin(self_clone.walk_with_recursive(&entry_path, callback, semaphore)).await?;
                     drop(permit);
                 }
             }

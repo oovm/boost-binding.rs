@@ -214,7 +214,7 @@ impl OakFluentTranslator {
         let mut ftl_content = String::new();
         for (key, value) in translations {
             ftl_content.push_str(&format!("{} = {}", key, value));
-            ftl_content.push_str("\n");
+            ftl_content.push('\n');
         }
 
         self.add_translations_from_string(locale, &ftl_content)
@@ -236,19 +236,16 @@ impl OakFluentTranslator {
 impl TranslationProvider for OakFluentTranslator {
     fn translate(&self, key: &str, args: Option<&HashMap<String, String>>, locale: &str) -> Result<String, I18nError> {
         // 尝试从当前语言获取翻译
-        if let Some(translator) = self.translators.get(locale) {
-            if let Some(translation) = translator.translate(key, &args.unwrap_or(&HashMap::new())) {
-                return Ok(translation);
-            }
+        if let Some(translator) = self.translators.get(locale)
+            && let Some(translation) = translator.translate(key, args.unwrap_or(&HashMap::new())) {
+            return Ok(translation);
         }
 
         // 回退到默认语言
-        if locale != self.default_locale {
-            if let Some(translator) = self.translators.get(&self.default_locale) {
-                if let Some(translation) = translator.translate(key, &args.unwrap_or(&HashMap::new())) {
-                    return Ok(translation);
-                }
-            }
+        if locale != self.default_locale
+            && let Some(translator) = self.translators.get(&self.default_locale)
+            && let Some(translation) = translator.translate(key, args.unwrap_or(&HashMap::new())) {
+            return Ok(translation);
         }
 
         // 回退到键本身

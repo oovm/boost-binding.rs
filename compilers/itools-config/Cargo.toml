@@ -16,7 +16,6 @@ tracing-subscriber = { workspace = true }
 itools-macros = { workspace = true }
 itools-localization = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
 oak-json = { workspace = true, optional = true }
 oak-toml = { workspace = true, optional = true }
 oak-yaml = { workspace = true, optional = true }
