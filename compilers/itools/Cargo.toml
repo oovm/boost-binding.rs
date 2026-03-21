@@ -25,7 +25,7 @@ serde = { workspace = true }
 oak-json = { workspace = true }
 oak-yaml = { workspace = true }
 oak-toml = { workspace = true }
-itools-notify = { path = "../itools-notify" }
+itools-notify = { version = "0.0.1", path = "../itools-notify" }
 
 [build-dependencies]
 # 暂时不使用外部库，我们将自研资源编译逻辑

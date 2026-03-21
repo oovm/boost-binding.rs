@@ -23,7 +23,7 @@ impl MacOSWatcher {
 impl Watcher for MacOSWatcher {
     type Error = std::io::Error;
 
-    fn watch(&mut self, path: PathBuf, _recursive: bool) -> Result<(), Self::Error> {
+    fn watch(&mut self, path: PathBuf, recursive: bool) -> Result<(), Self::Error> {
         self.watch_paths.push(path.clone());
 
         // 这里将实现具体的监控逻辑
