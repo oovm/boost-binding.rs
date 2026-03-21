@@ -1,0 +1,18 @@
+[package]
+name = "itools-cli"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = "https://github.com/oovm/iTools/tree/dev/compilers/itools-cli"
+description = "iTools command line interface"
+
+[dependencies]
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+itools-localization = { workspace = true }
+itools-tui = { workspace = true }
+
+# Command line parsing
+clap = { version = "4.5.0", features = ["derive"] }

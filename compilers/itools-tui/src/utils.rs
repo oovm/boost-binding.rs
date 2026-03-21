@@ -179,3 +179,51 @@ pub mod math {
         start + (end - start) * t
     }
 }
+
+/// 交互式选择菜单
+pub fn select<T>(items: &[T], prompt: &str) -> Option<usize>
+where
+    T: std::fmt::Display,
+{
+    println!("{}", prompt);
+    for (i, item) in items.iter().enumerate() {
+        println!("{}: {}", i + 1, item);
+    }
+
+    loop {
+        print!("请选择 (1-{}): ", items.len());
+        std::io::stdout().flush().unwrap();
+
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+
+        match input.trim().parse::<usize>() {
+            Ok(choice) if choice >= 1 && choice <= items.len() => {
+                return Some(choice - 1);
+            }
+            _ => {
+                println!("无效的选择，请重新输入");
+            }
+        }
+    }
+}
+
+/// 显示加载动画
+pub fn loading_animation(duration: std::time::Duration, message: &str) {
+    let chars = ["|", "/", "-", "\\"];
+    let start = std::time::Instant::now();
+
+    print!("{}", message);
+    std::io::stdout().flush().unwrap();
+
+    let mut i = 0;
+    while start.elapsed() < duration {
+        print!("\r{}{}", message, chars[i % chars.len()]);
+        std::io::stdout().flush().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        i += 1;
+    }
+
+    print!("\r{}{}", message, " ");
+    println!();
+}

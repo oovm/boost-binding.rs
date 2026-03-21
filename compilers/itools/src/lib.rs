@@ -4,7 +4,7 @@
 //!
 //! 提供命令行接口功能，包括命令解析、执行和交互。
 
-use clap::{Parser, Subcommand};
+use clap;
 use tracing::info;
 
 /// 导入宏
@@ -63,29 +63,68 @@ impl Parse for bool {
     }
 }
 
-/// iTools 命令行工具 - 使用 clap 解析
-#[derive(Parser, Debug)]
-#[command(name = "itools", about = "iTools - A powerful toolkit for Rust developers")]
-pub struct App {
-    /// 子命令
-    #[command(subcommand)]
-    pub command: ClapCommand,
-}
+/// 命令行应用框架 - 使用 clap 解析
+///
+/// 开发者可以通过实现 clap 的 Parser trait 来定义自己的命令结构
+///
+/// # 示例
+/// ```rust
+/// use clap::Parser;
+/// use itools::App;
+///
+/// #[derive(Parser, Debug)]
+/// #[command(name = "myapp", about = "My awesome CLI tool")]
+/// struct MyApp {
+///     #[command(subcommand)]
+///     command: MyCommand,
+/// }
+///
+/// #[derive(clap::Subcommand, Debug)]
+/// enum MyCommand {
+///     /// 初始化命令
+///     Init {
+///         /// 项目名称
+///         name: String,
+///     },
+///     /// 构建命令
+///     Build,
+/// }
+///
+/// fn main() {
+///     let app = App::parse::<MyApp>();
+///     // 处理命令
+/// }
+/// ```
+pub struct App;
 
-/// 命令枚举 - 使用 clap 解析
-#[derive(Subcommand, Debug)]
-pub enum ClapCommand {
-    /// 初始化新项目
-    Init {
-        /// 项目名称
-        name: String,
-    },
-    /// 构建项目
-    Build,
-    /// 开发服务器
-    Dev,
-    /// 检查项目
-    Check,
+impl App {
+    /// 解析命令行参数并返回解析结果
+    ///
+    /// # 示例
+    /// ```rust
+    /// let app = App::parse::<MyApp>();
+    /// ```
+    pub fn parse<T: clap::Parser>() -> T {
+        T::parse()
+    }
+
+    /// 解析命令行参数并返回 Result 类型
+    ///
+    /// # 示例
+    /// ```rust
+    /// match App::try_parse::<MyApp>() {
+    ///     Ok(app) => {
+    ///         // 处理命令
+    ///     },
+    ///     Err(e) => {
+    ///         // 处理错误
+    ///         e.exit();
+    ///     }
+    /// }
+    /// ```
+    pub fn try_parse<T: clap::Parser>() -> Result<T, clap::Error> {
+        T::try_parse()
+    }
 }
 
 /// iTools 命令行工具
@@ -135,26 +174,7 @@ impl Parse for Command {
     }
 }
 
-/// 从 ClapCommand 转换为 Command
-impl From<ClapCommand> for Command {
-    fn from(clap_command: ClapCommand) -> Self {
-        match clap_command {
-            ClapCommand::Init { name } => Self::Init { name },
-            ClapCommand::Build => Self::Build,
-            ClapCommand::Dev => Self::Dev,
-            ClapCommand::Check => Self::Check,
-        }
-    }
-}
 
-/// 从 App 转换为 Cli
-impl From<App> for Cli {
-    fn from(app: App) -> Self {
-        Self {
-            command: app.command.into(),
-        }
-    }
-}
 
 /// 初始化 CLI 环境
 pub fn init_cli() {

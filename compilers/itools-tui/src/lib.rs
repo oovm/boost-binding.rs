@@ -42,6 +42,8 @@ pub use components::*;
 
 /// 工具函数相关功能
 pub use utils::*;
+pub use utils::select;
+pub use utils::loading_animation;
 
 /// 渲染系统相关功能
 pub use render::*;

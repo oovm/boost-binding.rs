@@ -110,7 +110,7 @@ pub struct ConfigManager {
 impl ConfigManager {
     /// 创建新的配置管理器
     pub fn new() -> Self {
-        Self { fragments: Vec::new(), merged_config: JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }) }
+        Self { fragments: Vec::new(), merged_config: JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }) }
     }
 
     /// 加载配置片段
@@ -159,12 +159,12 @@ impl ConfigManager {
     }
 
     /// 验证配置
-    pub fn validate_config(&self, config: &JsonValueNode) -> Result<(), ConfigError> {
+    pub fn validate_config(&self, config: &JsonValue) -> Result<(), ConfigError> {
         // 这里可以添加配置验证逻辑
         // 例如：检查必需的配置项、验证配置值的类型和范围等
 
         // 示例：检查是否存在必需的配置项
-        if let oak_json::JsonValueNode::Object(_map) = config {
+        if let oak_json::JsonValue::Object(_map) = config {
             // 这里可以添加具体的验证逻辑
         }
 
@@ -206,7 +206,7 @@ impl ConfigManager {
         self.fragments.sort_by(|a, b| a.priority.cmp(&b.priority));
 
         // 初始化合并后的配置
-        self.merged_config = JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
+        self.merged_config = JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
 
         // 合并所有配置片段
         for fragment in &self.fragments {
@@ -215,11 +215,11 @@ impl ConfigManager {
     }
 
     /// 合并两个值
-    fn merge_values(&self, target: JsonValueNode, source: JsonValueNode) -> JsonValueNode {
+    fn merge_values(&self, target: JsonValue, source: JsonValue) -> JsonValue {
         match (target, source) {
-            (JsonValueNode::Object(target_obj), JsonValueNode::Object(source_obj)) => {
+            (JsonValue::Object(target_obj), JsonValue::Object(source_obj)) => {
                 // 构建target字段的HashMap以便快速查找
-                let mut target_fields: HashMap<String, JsonValueNode> = target_obj.fields.into_iter()
+                let mut target_fields: HashMap<String, JsonValue> = target_obj.fields.into_iter()
                     .map(|field| (field.name.value, field.value))
                     .collect();
                 
@@ -249,14 +249,14 @@ impl ConfigManager {
                 // 按字段名排序以保持一致性
                 fields.sort_by(|a, b| a.name.value.cmp(&b.name.value));
                 
-                JsonValueNode::Object(JsonObject { fields, span: (0..0).into() })
+                JsonValue::Object(JsonObject { fields, span: (0..0).into() })
             }
             (_, source) => source, // 其他类型直接替换
         }
     }
 
     /// 获取合并后的配置
-    pub fn get_config(&self) -> &JsonValueNode {
+    pub fn get_config(&self) -> &JsonValue {
         &self.merged_config
     }
 
@@ -287,7 +287,7 @@ impl ConfigManager {
     }
 
     /// 添加默认配置值
-    pub fn add_defaults(&mut self, defaults: JsonValueNode) {
+    pub fn add_defaults(&mut self, defaults: JsonValue) {
         let fragment = ConfigFragment { data: defaults, priority: 0 };
         self.fragments.push(fragment);
         self.merge_configs();
@@ -307,21 +307,21 @@ impl ConfigManager {
             }
             else {
                 // 确保当前是对象
-                if !matches!(current, JsonValueNode::Object(_)) {
-                    *current = JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
+                if !matches!(current, JsonValue::Object(_)) {
+                    *current = JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
                 }
                 
                 // 查找或创建字段
                 match current {
-                    JsonValueNode::Object(current_obj) => {
+                    JsonValue::Object(current_obj) => {
                         // 先检查是否存在该字段
                         let field_index = current_obj.fields.iter()
                             .position(|field| field.name.value == *key);
                         
                         if let Some(index) = field_index {
                             // 确保字段值是对象
-                            if !matches!(&current_obj.fields[index].value, JsonValueNode::Object(_)) {
-                                current_obj.fields[index].value = JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
+                            if !matches!(&current_obj.fields[index].value, JsonValue::Object(_)) {
+                                current_obj.fields[index].value = JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
                             }
                             current = &mut current_obj.fields[index].value;
                         }
@@ -329,7 +329,7 @@ impl ConfigManager {
                             // 创建新字段
                             current_obj.fields.push(JsonField {
                                 name: JsonString { value: key.to_string(), span: (0..0).into() },
-                                value: JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }),
+                                value: JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }),
                                 span: (0..0).into()
                             });
                             // 找到刚添加的字段并设置current
@@ -338,12 +338,12 @@ impl ConfigManager {
                     }
                     _ => {
                         // 不应该发生，因为上面已经确保是对象
-                        *current = JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
-                        if let JsonValueNode::Object(current_obj) = current {
+                        *current = JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() });
+                        if let JsonValue::Object(current_obj) = current {
                             // 创建新字段
                             current_obj.fields.push(JsonField {
                                 name: JsonString { value: key.to_string(), span: (0..0).into() },
-                                value: JsonValueNode::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }),
+                                value: JsonValue::Object(JsonObject { fields: Vec::new(), span: (0..0).into() }),
                                 span: (0..0).into()
                             });
                             // 找到刚添加的字段并设置current
@@ -358,22 +358,22 @@ impl ConfigManager {
     }
 
     /// 解析值
-    fn parse_value(&self, value: &str) -> JsonValueNode {
+    fn parse_value(&self, value: &str) -> JsonValue {
         // 尝试解析为不同类型
         if value == "true" {
-            JsonValueNode::Boolean(JsonBoolean { value: true, span: (0..0).into() })
+            JsonValue::Boolean(JsonBoolean { value: true, span: (0..0).into() })
         }
         else if value == "false" {
-            JsonValueNode::Boolean(JsonBoolean { value: false, span: (0..0).into() })
+            JsonValue::Boolean(JsonBoolean { value: false, span: (0..0).into() })
         }
         else if let Ok(num) = value.parse::<i64>() {
-            JsonValueNode::Number(JsonNumber { value: num as f64, span: (0..0).into() })
+            JsonValue::Number(JsonNumber { value: num as f64, span: (0..0).into() })
         }
         else if let Ok(num) = value.parse::<f64>() {
-            JsonValueNode::Number(JsonNumber { value: num, span: (0..0).into() })
+            JsonValue::Number(JsonNumber { value: num, span: (0..0).into() })
         }
         else {
-            JsonValueNode::String(JsonString { value: value.to_string(), span: (0..0).into() })
+            JsonValue::String(JsonString { value: value.to_string(), span: (0..0).into() })
         }
     }
 }
