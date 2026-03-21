@@ -382,7 +382,7 @@ pub fn t(input: TokenStream) -> TokenStream {
     // 尝试解析为单个字符串字面量（基本翻译）
     if let Ok(lit_str) = syn::parse::<syn::LitStr>(input.clone()) {
         let key = lit_str.value();
-        
+
         // 简单的编译时检查：确保键不为空
         if key.is_empty() {
             let error: proc_macro2::TokenStream = parse_quote! {
@@ -390,14 +390,14 @@ pub fn t(input: TokenStream) -> TokenStream {
             };
             return error.into();
         }
-        
+
         let expanded = quote! {
             itools_localization::t(#lit_str)
         };
-        
+
         return expanded.into();
     }
-    
+
     // 尝试解析为元组（带参数的翻译）
     if let Ok(expr_tuple) = syn::parse::<syn::ExprTuple>(input) {
         if expr_tuple.elems.len() != 2 {
@@ -406,17 +406,17 @@ pub fn t(input: TokenStream) -> TokenStream {
             };
             return error.into();
         }
-        
+
         let key = &expr_tuple.elems[0];
         let args = &expr_tuple.elems[1];
-        
+
         let expanded = quote! {
             itools_localization::t_with_args(#key, #args)
         };
-        
+
         return expanded.into();
     }
-    
+
     // 解析失败
     let error: proc_macro2::TokenStream = parse_quote! {
         compile_error!("t! macro expects either a string literal or a tuple of (string literal, args)");

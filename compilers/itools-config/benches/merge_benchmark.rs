@@ -1,6 +1,9 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use figment::{
+    Figment,
+    providers::{Format, Json, Toml, Yaml},
+};
 use itools_config::ConfigManager;
-use figment::{Figment, providers::{Json, Toml, Yaml, Format}};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tempfile::NamedTempFile;
@@ -122,10 +125,7 @@ fn benchmark_merge(c: &mut Criterion) {
     // 基准测试 figment
     group.bench_function("figment_merge", |b| {
         b.iter(|| {
-            let figment = Figment::new()
-                .merge(Json::file(json_path))
-                .merge(Toml::file(toml_path))
-                .merge(Yaml::file(yaml_path));
+            let figment = Figment::new().merge(Json::file(json_path)).merge(Toml::file(toml_path)).merge(Yaml::file(yaml_path));
             let config: TestConfig = figment.extract().unwrap();
             black_box(config);
         });

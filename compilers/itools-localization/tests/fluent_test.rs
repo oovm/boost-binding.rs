@@ -1,21 +1,18 @@
-use oak_fluent::{Translator, ast::{FluentRoot, FluentMessage, FluentPattern, FluentPatternElement}};
+use oak_fluent::{
+    Translator,
+    ast::{FluentMessage, FluentPattern, FluentPatternElement, FluentRoot},
+};
 
 #[test]
 fn test_oak_fluent_translator() {
     // 手动创建 FluentRoot 实例
     let root = FluentRoot {
-        messages: vec![
-            FluentMessage {
-                id: "hello".to_string(),
-                value: Some(FluentPattern {
-                    elements: vec![
-                        FluentPatternElement::Text("Hello world!".to_string()),
-                    ],
-                }),
-                attributes: vec![],
-                variants: vec![],
-            },
-        ],
+        messages: vec![FluentMessage {
+            id: "hello".to_string(),
+            value: Some(FluentPattern { elements: vec![FluentPatternElement::Text("Hello world!".to_string())] }),
+            attributes: vec![],
+            variants: vec![],
+        }],
     };
 
     // 创建翻译器

@@ -1,5 +1,5 @@
 /// oak-fluent 功能兼容性测试
-use itools_localization::{OakFluentTranslator, I18nContext, get_locale, set_locale, t, t_with_args};
+use itools_localization::{I18nContext, OakFluentTranslator, get_locale, set_locale, t, t_with_args};
 
 #[test]
 fn test_basic_translation() {

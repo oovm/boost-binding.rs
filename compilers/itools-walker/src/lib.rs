@@ -5,8 +5,7 @@
 //! 提供异步的目录遍历功能，支持递归遍历目录结构、并发处理和 glob 模式匹配。
 
 use futures::stream::{self, Stream};
-use std::num::NonZeroU32;
-use std::path::Path;
+use std::{num::NonZeroU32, path::Path};
 use tokio::{
     fs,
     sync::{Semaphore, mpsc},
@@ -66,12 +65,12 @@ impl WalkEntry {
     pub fn is_dir(&self) -> bool {
         self.metadata.is_dir()
     }
-    
+
     /// 是否为文件
     pub fn is_file(&self) -> bool {
         self.metadata.is_file()
     }
-    
+
     /// 是否为符号链接
     pub fn is_symlink(&self) -> bool {
         self.path.symlink_metadata().map(|m| m.file_type().is_symlink()).unwrap_or(false)

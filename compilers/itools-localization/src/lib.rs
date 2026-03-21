@@ -1,10 +1,10 @@
 #![warn(missing_docs)]
 
 //! iTools 国际化支持模块
-//! 
+//!
 //! 提供完整的国际化功能，包括翻译管理、语言切换和参数化翻译。
 
-use std::{collections::HashMap, path::Path, num::NonZeroUsize};
+use std::{collections::HashMap, num::NonZeroUsize, path::Path};
 use tracing::info;
 
 /// 国际化错误类型
@@ -55,12 +55,7 @@ use oak_fluent::{Translator as OakFluentTranslatorCore, parse};
 /// 翻译提供者 trait
 pub trait TranslationProvider {
     /// 翻译一个键
-    fn translate(
-        &self,
-        key: &str,
-        args: Option<&HashMap<String, String>>,
-        locale: &str,
-    ) -> Result<String, I18nError>;
+    fn translate(&self, key: &str, args: Option<&HashMap<String, String>>, locale: &str) -> Result<String, I18nError>;
 
     /// 获取当前语言
     fn get_locale(&self) -> &str;
@@ -97,12 +92,7 @@ impl SimpleTranslator {
 }
 
 impl TranslationProvider for SimpleTranslator {
-    fn translate(
-        &self,
-        key: &str,
-        args: Option<&HashMap<String, String>>,
-        locale: &str,
-    ) -> Result<String, I18nError> {
+    fn translate(&self, key: &str, args: Option<&HashMap<String, String>>, locale: &str) -> Result<String, I18nError> {
         // 查找翻译
         let translation = self
             .translations
@@ -145,8 +135,6 @@ impl TranslationProvider for SimpleTranslator {
     }
 }
 
-
-
 /// Oak Fluent 翻译提供者
 pub struct OakFluentTranslator {
     translators: HashMap<String, OakFluentTranslatorCore>,
@@ -167,15 +155,15 @@ impl OakFluentTranslator {
     /// 从文件加载翻译
     pub fn add_translations_from_file(&mut self, locale: &str, file_path: &Path) -> Result<(), I18nError> {
         let content = std::fs::read_to_string(file_path)?;
-        
+
         // 根据文件扩展名选择解析器
         match file_path.extension().and_then(|ext| ext.to_str()) {
             Some("ftl") => self.add_translations_from_string(locale, &content),
             Some("json") => {
                 #[cfg(feature = "json")]
                 {
-                    let translations: HashMap<String, String> = oak_json::from_str(&content)
-                        .map_err(|e| I18nError::ParseError(e.to_string()))?;
+                    let translations: HashMap<String, String> =
+                        oak_json::from_str(&content).map_err(|e| I18nError::ParseError(e.to_string()))?;
                     self.add_simple_translations(locale, translations)
                 }
                 #[cfg(not(feature = "json"))]
@@ -186,8 +174,8 @@ impl OakFluentTranslator {
             Some("toml") => {
                 #[cfg(feature = "toml")]
                 {
-                    let translations: HashMap<String, String> = oak_toml::from_str(&content)
-                        .map_err(|e| I18nError::ParseError(e.to_string()))?;
+                    let translations: HashMap<String, String> =
+                        oak_toml::from_str(&content).map_err(|e| I18nError::ParseError(e.to_string()))?;
                     self.add_simple_translations(locale, translations)
                 }
                 #[cfg(not(feature = "toml"))]
@@ -198,8 +186,8 @@ impl OakFluentTranslator {
             Some("yaml") | Some("yml") => {
                 #[cfg(feature = "yaml")]
                 {
-                    let translations: HashMap<String, String> = oak_yaml::from_str(&content)
-                        .map_err(|e| I18nError::ParseError(e.to_string()))?;
+                    let translations: HashMap<String, String> =
+                        oak_yaml::from_str(&content).map_err(|e| I18nError::ParseError(e.to_string()))?;
                     self.add_simple_translations(locale, translations)
                 }
                 #[cfg(not(feature = "yaml"))]
@@ -217,10 +205,10 @@ impl OakFluentTranslator {
         // 这里我们需要将 HashMap 转换为 Fluent 格式，或者添加对简单键值对的支持
         // 为了简单起见，我们暂时将其添加到 SimpleTranslator 中
         // 后续可以考虑更复杂的实现
-        
+
         // 这里我们使用一个临时的 SimpleTranslator 来处理简单的键值对翻译
         // 实际实现中，我们可能需要将这些翻译转换为 Fluent 格式
-        
+
         // 由于 OakFluentTranslator 目前只支持 Fluent 格式，我们需要添加对简单键值对的支持
         // 这里我们使用一个简单的方法，将键值对转换为 Fluent 格式的字符串
         let mut ftl_content = String::new();
@@ -228,7 +216,7 @@ impl OakFluentTranslator {
             ftl_content.push_str(&format!("{} = {}", key, value));
             ftl_content.push_str("\n");
         }
-        
+
         self.add_translations_from_string(locale, &ftl_content)
     }
 
@@ -246,12 +234,7 @@ impl OakFluentTranslator {
 }
 
 impl TranslationProvider for OakFluentTranslator {
-    fn translate(
-        &self,
-        key: &str,
-        args: Option<&HashMap<String, String>>,
-        locale: &str,
-    ) -> Result<String, I18nError> {
+    fn translate(&self, key: &str, args: Option<&HashMap<String, String>>, locale: &str) -> Result<String, I18nError> {
         // 尝试从当前语言获取翻译
         if let Some(translator) = self.translators.get(locale) {
             if let Some(translation) = translator.translate(key, &args.unwrap_or(&HashMap::new())) {
@@ -345,7 +328,11 @@ impl I18nContext {
 
     /// 创建带有自定义缓存容量的国际化上下文
     pub fn with_cache_capacity(translator: Box<dyn TranslationProvider + Send + Sync>, capacity: usize) -> Self {
-        Self { translator, translation_cache: lru::LruCache::new(NonZeroUsize::new(capacity).unwrap()), cache_capacity: capacity }
+        Self {
+            translator,
+            translation_cache: lru::LruCache::new(NonZeroUsize::new(capacity).unwrap()),
+            cache_capacity: capacity,
+        }
     }
 
     /// 翻译一个键
