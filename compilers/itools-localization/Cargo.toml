@@ -1,0 +1,30 @@
+[package]
+name = "itools-localization"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+description = "Internationalization support for iTools"
+homepage = "https://itools.dev"
+repository = "https://github.com/itools-dev/itools"
+license = { workspace = true }
+
+[dependencies]
+fluent = { workspace = true }
+fluent-syntax = { workspace = true }
+fluent-bundle = { workspace = true }
+unic-langid = { workspace = true }
+lazy_static = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+lru = { workspace = true }
+
+# Oak Fluent support
+oak-fluent = { path = "../../../oaks/examples/oak-fluent", optional = true }
+
+[features]
+default = []
+oak-fluent = ["dep:oak-fluent"]
+
+[dev-dependencies]
+assert_matches = "1.5"

@@ -1,11 +1,35 @@
 {
     "private": true,
+    "type": "module",
+    "workspaces": [
+        "packages/*",
+        "runtimes/*",
+        "plugins/*",
+        "themes/*",
+        "documentation",
+        "benchmarks"
+    ],
     "scripts": {
         "doc": "cargo doc --no-deps --all-features",
         "test": "cargo test --release",
+        "bench": "tsx benchmarks/src/benchmark.ts",
         "fmt": "cargo fmt --all",
-        "p": "git push && git push --tags --prune",
-        "reset": "git reset Head~ --soft",
-        "u": "cargo upgrade --workspace"
-    }
+        "fmt:js": "biome format --write .",
+        "fmt:check": "biome format .",
+        "lint": "biome lint .",
+        "dev": "pnpm -F @itools/documentation dev",
+        "build": "pnpm -F @itools/documentation build",
+        "preview": "pnpm -F @itools/documentation preview",
+        "build:release": "tsx scripts/build-release.ts",
+        "u": "cargo upgrade --workspace",
+        "check:ci": "node scripts/check.mjs",
+        "check": "node scripts/check.mjs",
+        "typecheck:frontend": "pnpm -r exec tsc --noEmit",
+        "build:frontend": "pnpm -r run build"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^1.8.0",
+        "tsx": "^4.21.0"
+    },
+    "packageManager": "pnpm@10.18.3"
 }

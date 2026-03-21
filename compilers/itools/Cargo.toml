@@ -1,24 +1,32 @@
 [package]
-name = "serde-html"
-version = "0.0.1"
-authors = ["Aster <192607617@qq.com>"]
-description = "Strong typed html with serde support"
-repository = "https://github.com/oovm/serde-html"
-documentation = "https://docs.rs/serde-html"
-readme = "readme.md"
-license = "MPL-2.0"
-edition = "2021"
-exclude = ["package.json", "tests/**"]
+name = "itools"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
 
 [dependencies]
-serde = { version = "1.0.189", features = ["derive"] }
-indexmap = "2.0.2"
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+itools-macros = { workspace = true }
+lazy_static = { workspace = true }
+crossterm = { workspace = true }
 
+# Internationalization
+itools-localization = { workspace = true }
 
-[dev-dependencies]
+# Workspace dependencies
 
-[features]
-default = []
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+toml = { workspace = true }
 
-[package.metadata.docs.rs]
-all-features = true
+[build-dependencies]
+# 暂时不使用外部库，我们将自研资源编译逻辑
+
+[package.metadata.winres]
+OriginalFilename = "iTools.exe"
+LegalCopyright = "Copyright © 2026"

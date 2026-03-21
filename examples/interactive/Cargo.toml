@@ -1,0 +1,13 @@
+[package]
+name = "interactive"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
+
+[dependencies]
+itools = { workspace = true }
+itools-macros = { workspace = true }

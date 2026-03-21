@@ -1,21 +1,17 @@
 [package]
-name = "serde-svg"
-version = "0.0.0"
-authors = ["Aster <192607617@qq.com>"]
-description = "Strong typed svg with serde support"
-repository = "https://github.com/oovm/sub_projects"
-documentation = "https://docs.rs/serde-svg"
-readme = "readme.md"
-license = "MPL-2.0"
-edition = "2021"
-exclude = ["package.json", "tests/**"]
+name = "itools-core"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+description = "Core functionality for iTools, including error handling and utilities"
+homepage = "https://itools.dev"
+repository = "https://github.com/itools-dev/itools"
+license = { workspace = true }
 
 [dependencies]
+itools-localization = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tracing = { workspace = true }
 
 [dev-dependencies]
-
-[features]
-default = []
-
-[package.metadata.docs.rs]
-all-features = true
+assert_matches = "1.5"

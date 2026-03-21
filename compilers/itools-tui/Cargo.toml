@@ -1,0 +1,13 @@
+[package]
+name = "itools-tui"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+readme = "readme.md"
+description = "iTools TUI module"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+crossterm = { workspace = true }
