@@ -80,6 +80,7 @@ pub struct ConfigManager {
     merged_config: JsonValueNode,
 }
 
+#[cfg(feature = "json")]
 impl ConfigManager {
     /// 创建新的配置管理器
     pub fn new() -> Self {
@@ -95,14 +96,7 @@ impl ConfigManager {
 
         let data = match path.extension().and_then(|ext| ext.to_str()) {
             Some("json") => {
-                #[cfg(feature = "json")]
-                {
-                    oak_json::from_str(&content)?
-                }
-                #[cfg(not(feature = "json"))]
-                {
-                    return Err("JSON feature is not enabled".into());
-                }
+                oak_json::from_str(&content)?
             }
             Some("toml") => {
                 #[cfg(feature = "toml")]

@@ -1,6 +1,6 @@
 [package]
 name = "itools"
-version = "0.0.1"
+version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
@@ -16,6 +16,9 @@ itools-macros = { workspace = true }
 lazy_static = { workspace = true }
 crossterm = { workspace = true }
 
+# Command line parsing
+clap = { version = "4.5.0", features = ["derive"] }
+
 # Internationalization
 itools-localization = { workspace = true }
 
@@ -25,7 +28,7 @@ serde = { workspace = true }
 oak-json = { workspace = true }
 oak-yaml = { workspace = true }
 oak-toml = { workspace = true }
-itools-notify = { version = "0.0.1", path = "../itools-notify" }
+itools-notify = { workspace = true }
 
 [build-dependencies]
 # 暂时不使用外部库，我们将自研资源编译逻辑

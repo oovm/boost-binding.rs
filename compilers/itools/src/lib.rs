@@ -4,6 +4,7 @@
 //!
 //! 提供命令行接口功能，包括命令解析、执行和交互。
 
+use clap::{Parser, Subcommand};
 use tracing::info;
 
 /// 导入宏
@@ -62,6 +63,31 @@ impl Parse for bool {
     }
 }
 
+/// iTools 命令行工具 - 使用 clap 解析
+#[derive(Parser, Debug)]
+#[command(name = "itools", about = "iTools - A powerful toolkit for Rust developers")]
+pub struct App {
+    /// 子命令
+    #[command(subcommand)]
+    pub command: ClapCommand,
+}
+
+/// 命令枚举 - 使用 clap 解析
+#[derive(Subcommand, Debug)]
+pub enum ClapCommand {
+    /// 初始化新项目
+    Init {
+        /// 项目名称
+        name: String,
+    },
+    /// 构建项目
+    Build,
+    /// 开发服务器
+    Dev,
+    /// 检查项目
+    Check,
+}
+
 /// iTools 命令行工具
 #[derive(Debug)]
 pub struct Cli {
@@ -105,6 +131,27 @@ impl Parse for Command {
             "dev" => Self::Dev,
             "check" => Self::Check,
             _ => panic!("{}", t!("errors.unknown_command")),
+        }
+    }
+}
+
+/// 从 ClapCommand 转换为 Command
+impl From<ClapCommand> for Command {
+    fn from(clap_command: ClapCommand) -> Self {
+        match clap_command {
+            ClapCommand::Init { name } => Self::Init { name },
+            ClapCommand::Build => Self::Build,
+            ClapCommand::Dev => Self::Dev,
+            ClapCommand::Check => Self::Check,
+        }
+    }
+}
+
+/// 从 App 转换为 Cli
+impl From<App> for Cli {
+    fn from(app: App) -> Self {
+        Self {
+            command: app.command.into(),
         }
     }
 }
