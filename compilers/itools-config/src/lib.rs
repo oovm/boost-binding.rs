@@ -5,9 +5,11 @@
 //! 提供基于 fragment 的配置解析功能，支持将配置文件分割成多个片段进行管理和加载。
 
 use serde::{Deserialize, Serialize};
-use oak_json::{JsonValueNode, ast::{JsonObject, JsonField, JsonString, JsonBoolean, JsonNumber}};
 use std::{collections::HashMap, env, error::Error, fs, path::Path};
 use tracing::info;
+
+#[cfg(feature = "json")]
+use oak_json::{JsonValueNode, ast::{JsonObject, JsonField, JsonString, JsonBoolean, JsonNumber}};
 
 /// 国际化功能 - 使用 itools-localization 模块的国际化实现
 pub use itools_localization::{t, t_with_args};
@@ -58,6 +60,7 @@ impl Parse for bool {
     }
 }
 
+#[cfg(feature = "json")]
 /// 配置片段
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ConfigFragment {
@@ -67,6 +70,7 @@ pub struct ConfigFragment {
     pub priority: u32,
 }
 
+#[cfg(feature = "json")]
 /// 配置管理器
 #[derive(Debug)]
 pub struct ConfigManager {
