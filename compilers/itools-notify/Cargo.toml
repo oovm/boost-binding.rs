@@ -1,6 +1,6 @@
 [package]
 name = "itools-notify"
-version = "0.0.1"
+version = { workspace = true }
 edition = { workspace = true }
 authors = { workspace = true }
 description = "自研的文件系统变更通知库，不依赖外部 C 库"

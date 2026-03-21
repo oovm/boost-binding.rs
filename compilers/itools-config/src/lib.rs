@@ -8,6 +8,32 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, env, error::Error, fs, path::Path};
 use tracing::info;
 
+/// 配置错误类型
+#[derive(Debug)]
+pub enum ConfigError {
+    /// 文件未找到
+    FileNotFound(String),
+    /// 解析错误
+    ParseError(String),
+    /// 不支持的格式
+    UnsupportedFormat(String),
+    /// 验证错误
+    ValidationError(String),
+}
+
+impl std::fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ConfigError::FileNotFound(path) => write!(f, "{}", t_with_args("errors.config_not_found", &[("path", path)])),
+            ConfigError::ParseError(msg) => write!(f, "{}", msg),
+            ConfigError::UnsupportedFormat(format) => write!(f, "Unsupported config format: {}", format),
+            ConfigError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
+        }
+    }
+}
+
+impl Error for ConfigError {}
+
 #[cfg(feature = "json")]
 use oak_json::{JsonValueNode, ast::{JsonObject, JsonField, JsonString, JsonBoolean, JsonNumber}};
 
@@ -88,37 +114,37 @@ impl ConfigManager {
     }
 
     /// 加载配置片段
-    pub fn load_fragment(&mut self, path: &Path) -> Result<(), Box<dyn Error>> {
+    pub fn load_fragment(&mut self, path: &Path) -> Result<(), ConfigError> {
         info!("{}", t_with_args("messages.loading_config_fragment", &[("path", &path.to_string_lossy())]));
 
         let content = fs::read_to_string(path)
-            .map_err(|_e| format!("{}", t_with_args("errors.config_not_found", &[("path", &path.to_string_lossy())])))?;
+            .map_err(|_e| ConfigError::FileNotFound(path.to_string_lossy().to_string()))?;
 
         let data = match path.extension().and_then(|ext| ext.to_str()) {
             Some("json") => {
-                oak_json::from_str(&content)?
+                oak_json::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?
             }
             Some("toml") => {
                 #[cfg(feature = "toml")]
                 {
-                    oak_toml::from_str(&content)?
+                    oak_toml::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?
                 }
                 #[cfg(not(feature = "toml"))]
                 {
-                    return Err("TOML feature is not enabled".into());
+                    return Err(ConfigError::UnsupportedFormat("TOML feature is not enabled".to_string()));
                 }
             }
             Some("yaml") | Some("yml") => {
                 #[cfg(feature = "yaml")]
                 {
-                    oak_yaml::from_str(&content)?
+                    oak_yaml::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?
                 }
                 #[cfg(not(feature = "yaml"))]
                 {
-                    return Err("YAML feature is not enabled".into());
+                    return Err(ConfigError::UnsupportedFormat("YAML feature is not enabled".to_string()));
                 }
             }
-            _ => return Err("Unsupported config file format".into()),
+            _ => return Err(ConfigError::UnsupportedFormat("Unsupported config file format".to_string())),
         };
 
         // 验证配置
@@ -133,7 +159,7 @@ impl ConfigManager {
     }
 
     /// 验证配置
-    pub fn validate_config(&self, config: &JsonValueNode) -> Result<(), Box<dyn Error>> {
+    pub fn validate_config(&self, config: &JsonValueNode) -> Result<(), ConfigError> {
         // 这里可以添加配置验证逻辑
         // 例如：检查必需的配置项、验证配置值的类型和范围等
 
@@ -146,19 +172,19 @@ impl ConfigManager {
     }
 
     /// 验证合并后的配置
-    pub fn validate_merged_config(&self) -> Result<(), Box<dyn Error>> {
+    pub fn validate_merged_config(&self) -> Result<(), ConfigError> {
         self.validate_config(&self.merged_config)
     }
 
     /// 加载目录中的配置片段
-    pub fn load_directory(&mut self, path: &Path) -> Result<(), Box<dyn Error>> {
+    pub fn load_directory(&mut self, path: &Path) -> Result<(), ConfigError> {
         if !path.exists() || !path.is_dir() {
             return Ok(());
         }
 
-        let entries = fs::read_dir(path)?;
+        let entries = fs::read_dir(path).map_err(|e| ConfigError::ParseError(e.to_string()))?;
         for entry in entries {
-            let entry = entry?;
+            let entry = entry.map_err(|e| ConfigError::ParseError(e.to_string()))?;
             let entry_path = entry.path();
 
             if entry_path.is_dir() {
@@ -512,7 +538,7 @@ pub mod tui {
 }
 
 /// 执行命令
-pub fn execute_command(cli: Cli) -> Result<(), Box<dyn Error>> {
+pub fn execute_command(cli: Cli) -> Result<(), ConfigError> {
     match cli.command {
         Command::Init { name } => {
             info!("{}", t_with_args("messages.initializing_project", &[("name", &name)]));
