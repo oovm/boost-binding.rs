@@ -1,6 +1,6 @@
 [package]
 name = "itools-schema"
-version = "0.0.1"
+version = { workspace = true }
 edition = { workspace = true }
 authors = { workspace = true }
 description = "ITools Schema definition and construction"

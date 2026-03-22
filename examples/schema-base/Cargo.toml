@@ -1,6 +1,7 @@
 [package]
+publish = false
 name = "itools-schema-example"
-version = { workspace = true }
+version = "0.0.1"
 edition = { workspace = true }
 authors = { workspace = true }
 license = { workspace = true }

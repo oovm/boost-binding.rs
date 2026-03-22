@@ -1,6 +1,7 @@
 [package]
+publish = false
 name = "external-project"
-version = "0.1.0"
+version = "0.0.2"
 edition = "2021"
 description = "External project to test ITools Schema"
 

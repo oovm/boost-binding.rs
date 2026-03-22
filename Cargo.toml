@@ -2,17 +2,10 @@
 resolver = "2"
 members = [
     "compilers/*",
-    "examples/hello",
-    "examples/interactive",
-    "examples/schema",
+    "examples/*",
 ]
 default-members = [
-    "compilers/itools",
-    "compilers/itools-core",
-    "compilers/itools-macros",
-    "compilers/itools-config",
-    "compilers/itools-walker",
-    "compilers/itools-localization",
+    "compilers/*",
 ]
 [workspace.package]
 version = "0.0.1"
