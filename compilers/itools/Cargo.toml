@@ -24,7 +24,7 @@ itools-localization = { workspace = true }
 # Workspace dependencies
 
 serde = { workspace = true }
-serde_json = "1.0"
+serde_json = { workspace = true }
 oak-json = { workspace = true }
 oak-yaml = { workspace = true }
 oak-toml = { workspace = true }
