@@ -37,7 +37,7 @@ impl Error for ConfigError {}
 /// 配置值类型
 /// 
 /// 表示配置中的各种值类型，包括字符串、数字、布尔值、数组和对象
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ConfigValue {
     /// 字符串类型
     String(String),
@@ -54,7 +54,13 @@ pub enum ConfigValue {
 }
 
 #[cfg(feature = "json")]
-use oak_json::{JsonValueNode, ast::{JsonObject, JsonField, JsonString, JsonBoolean, JsonNumber}};
+use oak_json::JsonValueNode;
+
+#[cfg(feature = "toml")]
+use oak_toml::language::TomlValue;
+
+#[cfg(feature = "yaml")]
+use oak_yaml::language::YamlValue;
 
 /// 配置片段
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -72,6 +78,137 @@ pub struct ConfigManager {
     fragments: Vec<ConfigFragment>,
     /// 合并后的配置
     merged_config: ConfigValue,
+}
+
+#[cfg(feature = "json")]
+impl From<JsonValueNode> for ConfigValue {
+    fn from(value: JsonValueNode) -> Self {
+        match value {
+            JsonValueNode::String(s) => ConfigValue::String(s.value),
+            JsonValueNode::Number(n) => ConfigValue::Number(n.value),
+            JsonValueNode::Boolean(b) => ConfigValue::Boolean(b.value),
+            JsonValueNode::Array(a) => ConfigValue::Array(a.elements.into_iter().map(ConfigValue::from).collect()),
+            JsonValueNode::Object(o) => {
+                let mut map = HashMap::new();
+                for field in o.fields {
+                    map.insert(field.name.value, ConfigValue::from(field.value));
+                }
+                ConfigValue::Object(map)
+            }
+            JsonValueNode::Null(_) => ConfigValue::Null,
+        }
+    }
+}
+
+#[cfg(feature = "toml")]
+impl From<TomlValue> for ConfigValue {
+    fn from(value: TomlValue) -> Self {
+        match value {
+            TomlValue::String(s) => ConfigValue::String(s),
+            TomlValue::Integer(i) => ConfigValue::Number(i as f64),
+            TomlValue::Float(f) => ConfigValue::Number(f),
+            TomlValue::Boolean(b) => ConfigValue::Boolean(b),
+            TomlValue::Array(a) => ConfigValue::Array(a.list.into_iter().map(ConfigValue::from).collect()),
+            TomlValue::Table(t) => {
+                let mut map = HashMap::new();
+                for (key, value) in t.dict {
+                    map.insert(key, ConfigValue::from(value));
+                }
+                ConfigValue::Object(map)
+            }
+            _ => ConfigValue::Null, // 暂时不支持其他类型
+        }
+    }
+}
+
+#[cfg(feature = "yaml")]
+impl From<YamlValue> for ConfigValue {
+    fn from(value: YamlValue) -> Self {
+        match value {
+            YamlValue::String(s) => ConfigValue::String(s),
+            YamlValue::Integer(i) => ConfigValue::Number(i as f64),
+            YamlValue::Float(f) => ConfigValue::Number(f),
+            YamlValue::Boolean(b) => ConfigValue::Boolean(b),
+            YamlValue::Array(a) => ConfigValue::Array(a.list.into_iter().map(ConfigValue::from).collect()),
+            YamlValue::Object(o) => {
+                let mut map = HashMap::new();
+                for (key, value) in o.dict {
+                    map.insert(key, ConfigValue::from(value));
+                }
+                ConfigValue::Object(map)
+            }
+            YamlValue::Null => ConfigValue::Null,
+        }
+    }
+}
+
+impl ConfigValue {
+    /// 获取字符串值
+    /// 
+    /// 如果当前值是字符串，返回 Some(&str)，否则返回 None
+    pub fn get_string(&self) -> Option<&str> {
+        match self {
+            ConfigValue::String(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// 获取数字值
+    /// 
+    /// 如果当前值是数字，返回 Some(f64)，否则返回 None
+    pub fn get_number(&self) -> Option<f64> {
+        match self {
+            ConfigValue::Number(n) => Some(*n),
+            _ => None,
+        }
+    }
+
+    /// 获取布尔值
+    /// 
+    /// 如果当前值是布尔值，返回 Some(bool)，否则返回 None
+    pub fn get_boolean(&self) -> Option<bool> {
+        match self {
+            ConfigValue::Boolean(b) => Some(*b),
+            _ => None,
+        }
+    }
+
+    /// 获取数组值
+    /// 
+    /// 如果当前值是数组，返回 Some(&Vec<ConfigValue>)，否则返回 None
+    pub fn get_array(&self) -> Option<&Vec<ConfigValue>> {
+        match self {
+            ConfigValue::Array(a) => Some(a),
+            _ => None,
+        }
+    }
+
+    /// 获取对象值
+    /// 
+    /// 如果当前值是对象，返回 Some(&HashMap<String, ConfigValue>)，否则返回 None
+    pub fn get_object(&self) -> Option<&HashMap<String, ConfigValue>> {
+        match self {
+            ConfigValue::Object(o) => Some(o),
+            _ => None,
+        }
+    }
+
+    /// 检查是否为空值
+    /// 
+    /// 如果当前值是 Null，返回 true，否则返回 false
+    pub fn is_null(&self) -> bool {
+        matches!(self, ConfigValue::Null)
+    }
+
+    /// 从对象中获取指定键的值
+    /// 
+    /// 如果当前值是对象且包含指定键，返回 Some(&ConfigValue)，否则返回 None
+    pub fn get(&self, key: &str) -> Option<&ConfigValue> {
+        match self {
+            ConfigValue::Object(o) => o.get(key),
+            _ => None,
+        }
+    }
 }
 
 impl ConfigManager {
@@ -102,7 +239,7 @@ impl ConfigManager {
             Some("toml") => {
                 #[cfg(feature = "toml")]
                 {
-                    let toml_value: oak_toml::TomlValue = oak_toml::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?;
+                    let toml_value: TomlValue = oak_toml::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?;
                     ConfigValue::from(toml_value)
                 }
                 #[cfg(not(feature = "toml"))]
@@ -113,7 +250,7 @@ impl ConfigManager {
             Some("yaml") | Some("yml") => {
                 #[cfg(feature = "yaml")]
                 {
-                    let yaml_value: oak_yaml::YamlValue = oak_yaml::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?;
+                    let yaml_value: YamlValue = oak_yaml::from_str(&content).map_err(|e| ConfigError::ParseError(e.to_string()))?;
                     ConfigValue::from(yaml_value)
                 }
                 #[cfg(not(feature = "yaml"))]

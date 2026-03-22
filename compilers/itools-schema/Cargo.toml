@@ -1,0 +1,20 @@
+[package]
+name = "itools-schema"
+version = "0.1.0"
+edition = "2021"
+description = "ITools Schema definition and construction"
+homepage = "https://itools.dev"
+repository = "https://github.com/itools-dev/itools"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[features]
+default = []
+yaml = ["serde_yaml"]
+
+[dependencies.serde_yaml]
+version = "0.9"
+optional = true
