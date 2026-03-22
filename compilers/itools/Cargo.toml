@@ -24,10 +24,12 @@ itools-localization = { workspace = true }
 # Workspace dependencies
 
 serde = { workspace = true }
+serde_json = "1.0"
 oak-json = { workspace = true }
 oak-yaml = { workspace = true }
 oak-toml = { workspace = true }
 itools-notify = { workspace = true }
+itools-schema = { workspace = true }
 
 [build-dependencies]
 # 暂时不使用外部库，我们将自研资源编译逻辑

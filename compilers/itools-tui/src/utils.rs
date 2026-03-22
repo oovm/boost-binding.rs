@@ -3,6 +3,7 @@
 //! 提供各种 TUI 开发中常用的工具函数和实用工具。
 
 use crate::style::Color;
+use std::io::Write;
 
 /// 文本处理工具
 pub mod text {

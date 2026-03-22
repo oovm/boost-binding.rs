@@ -7,14 +7,9 @@
 #![warn(missing_docs)]
 
 use serde::{Deserialize, Serialize};
-use serde_json;
-
-#[cfg(feature = "yaml")]
-use serde_yaml;
 
 /// Schema 类型定义
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
 pub enum SchemaType {
     /// 字符串类型
     String,
@@ -43,71 +38,46 @@ impl Default for SchemaType {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Schema {
     /// Schema 标题
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     /// Schema 描述
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// Schema 类型
-    #[serde(rename = "type")]
     pub schema_type: SchemaType,
     /// 属性定义（仅 Object 类型）
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<std::collections::BTreeMap<String, Schema>>,
     /// 必需属性列表
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub required: Option<Vec<String>>,
     /// 数组元素类型（仅 Array 类型）
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<Box<Schema>>,
     /// 枚举值
-    #[serde(rename = "enum")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub enum_values: Option<Vec<serde_json::Value>>,
-    /// 默认值
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub default: Option<serde_json::Value>,
-    /// 示例值
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub example: Option<serde_json::Value>,
+    pub enum_values: Option<Vec<String>>,
+    /// 默认值（字符串表示）
+    pub default: Option<String>,
+    /// 示例值（字符串表示）
+    pub example: Option<String>,
     /// 是否可为空
-    #[serde(default)]
     pub nullable: bool,
     /// 只读
-    #[serde(default)]
     pub read_only: bool,
     /// 只写
-    #[serde(default)]
     pub write_only: bool,
     /// 最小值（Number/Integer）
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub minimum: Option<f64>,
     /// 最大值（Number/Integer）
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub maximum: Option<f64>,
     /// 最小长度（String）
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub min_length: Option<usize>,
     /// 最大长度（String）
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_length: Option<usize>,
     /// 正则模式（String）
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub pattern: Option<String>,
     /// 格式（String）
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub format: Option<String>,
-    /// 多个类型（用于 oneOf）
-    #[serde(rename = "oneOf")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// 多个类型（用于 one_of）
     pub one_of: Option<Vec<Schema>>,
-    /// 多个类型（用于 anyOf）
-    #[serde(rename = "anyOf")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// 多个类型（用于 any_of）
     pub any_of: Option<Vec<Schema>>,
-    /// 多个类型（用于 allOf）
-    #[serde(rename = "allOf")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// 多个类型（用于 all_of）
     pub all_of: Option<Vec<Schema>>,
 }
 
@@ -197,20 +167,20 @@ impl Schema {
     }
 
     /// 设置枚举值
-    pub fn enum_values(mut self, values: Vec<serde_json::Value>) -> Self {
-        self.enum_values = Some(values);
+    pub fn enum_values(mut self, values: Vec<impl Into<String>>) -> Self {
+        self.enum_values = Some(values.into_iter().map(Into::into).collect());
         self
     }
 
     /// 设置默认值
-    pub fn with_default(mut self, value: serde_json::Value) -> Self {
-        self.default = Some(value);
+    pub fn with_default(mut self, value: impl Into<String>) -> Self {
+        self.default = Some(value.into());
         self
     }
 
     /// 设置示例值
-    pub fn example(mut self, value: serde_json::Value) -> Self {
-        self.example = Some(value);
+    pub fn example(mut self, value: impl Into<String>) -> Self {
+        self.example = Some(value.into());
         self
     }
 
@@ -286,16 +256,6 @@ impl Schema {
         self
     }
 
-    /// 转换为 JSON Schema
-    pub fn to_json_schema(&self) -> serde_json::Value {
-        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
-    }
-
-    /// 转换为 YAML
-    #[cfg(feature = "yaml")]
-    pub fn to_yaml(&self) -> String {
-        serde_yaml::to_string(self).unwrap_or_default()
-    }
 }
 
 /// Schema 生成 trait
@@ -390,8 +350,3 @@ impl<T: ToSchema> ToSchema for Option<T> {
     }
 }
 
-impl ToSchema for serde_json::Value {
-    fn schema() -> Schema {
-        <Schema as Default>::default()
-    }
-}

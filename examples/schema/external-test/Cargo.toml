@@ -1,0 +1,10 @@
+[package]
+name = "external-project"
+version = "0.1.0"
+edition = "2021"
+description = "External project to test ITools Schema"
+
+[workspace]
+
+[dependencies]
+itools = { path = "../../../compilers/itools" }

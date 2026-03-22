@@ -42,6 +42,10 @@ pub use components::*;
 
 /// 工具函数相关功能
 pub use utils::*;
+pub use utils::text;
+pub use utils::color;
+pub use utils::terminal_utils;
+pub use utils::math;
 pub use utils::select;
 pub use utils::loading_animation;
 

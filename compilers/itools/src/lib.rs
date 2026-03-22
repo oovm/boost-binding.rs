@@ -16,6 +16,12 @@ pub use itools_localization::{get_locale, set_locale, t, t_with_args};
 /// 导出翻译宏
 pub use itools_macros::t;
 
+/// 导出 Schema 功能
+pub use itools_schema::{Schema, SchemaType, ToSchema};
+
+/// 导出 Schema 宏
+pub use itools_macros::Schema;
+
 /// 命令行参数解析 trait
 pub trait Parse {
     /// 从命令行参数中解析当前类型

@@ -44,7 +44,8 @@ itools-walker = { path = "compilers/itools-walker", version = "0.0.1" }
 itools-localization = { path = "compilers/itools-localization", version = "0.0.1" }
 itools-notify = { path = "compilers/itools-notify", version = "0.0.1" }
 itools-tui = { path = "compilers/itools-tui", version = "0.0.1" }
-itools-cli = { path = "compilers/itools-cli", version = "0.0.1" }
+
+itools-schema = { path = "compilers/itools-schema", version = "0.1.0" }
 
 # Oak parsers
 oak-core = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }

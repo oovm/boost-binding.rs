@@ -1,0 +1,8 @@
+[package]
+name = "itools-schema-example"
+version = "0.1.0"
+edition = "2021"
+description = "ITools Schema example"
+
+[dependencies]
+itools = { path = "../../compilers/itools" }

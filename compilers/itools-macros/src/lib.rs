@@ -423,3 +423,111 @@ pub fn t(input: TokenStream) -> TokenStream {
     };
     error.into()
 }
+
+/// Schema 生成宏
+///
+/// 用于自动为结构体和枚举生成 ToSchema 实现。
+///
+/// # 示例
+/// ```rust
+/// #[derive(itools::Schema)]
+/// pub struct User {
+///     /// 用户名
+///     pub name: String,
+///     /// 年龄
+///     pub age: u32,
+///     /// 邮箱
+///     pub email: Option<String>,
+/// }
+/// ```
+#[proc_macro_derive(Schema)]
+pub fn Schema(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    match input.data {
+        Data::Struct(ref data) => handle_schema_struct(&input, data),
+        Data::Enum(ref data) => handle_schema_enum(&input, data),
+        _ => {
+            let error: proc_macro2::TokenStream = parse_quote! {
+                compile_error!("#[derive(Schema)] can only be used on structs and enums");
+            };
+            error.into()
+        }
+    }
+}
+
+/// 处理 Schema 结构体
+fn handle_schema_struct(input: &DeriveInput, data: &DataStruct) -> TokenStream {
+    let name = &input.ident;
+    let generics = &input.generics;
+    let where_clause = &generics.where_clause;
+
+    let fields = match &data.fields {
+        Fields::Named(fields) => fields.named.iter().map(|field| {
+            let ident = field.ident.as_ref().unwrap();
+            let ident_str = ident.to_string();
+            let ty = &field.ty;
+            quote! {
+                .property(#ident_str, <#ty as itools::ToSchema>::schema())
+            }
+        }),
+        _ => {
+            let error: proc_macro2::TokenStream = parse_quote! {
+                compile_error!("#[Schema] only supports named fields for structs");
+            };
+            return error.into();
+        }
+    };
+
+    let expanded = quote! {
+        impl itools::ToSchema for #name #generics #where_clause {
+            fn schema() -> itools::Schema {
+                itools::Schema::object()
+                    #(#fields)*
+            }
+        }
+    };
+
+    expanded.into()
+}
+
+/// 处理 Schema 枚举
+fn handle_schema_enum(input: &DeriveInput, data: &DataEnum) -> TokenStream {
+    let name = &input.ident;
+    let generics = &input.generics;
+    let where_clause = &generics.where_clause;
+
+    let variants = data.variants.iter().map(|variant| {
+        let variant_ident = &variant.ident;
+        let variant_str = variant_ident.to_string();
+        match &variant.fields {
+            Fields::Unit => {
+                let variant_lit = syn::LitStr::new(&variant_str, variant_ident.span());
+                quote! {
+                    #variant_lit.to_string()
+                }
+            },
+            _ => {
+                let error: proc_macro2::TokenStream = parse_quote! {
+                    compile_error!("#[Schema] only supports unit variants for enums");
+                };
+                return error.into();
+            }
+        }
+    });
+
+    let expanded = quote! {
+        impl itools::ToSchema for #name #generics #where_clause {
+            fn schema() -> itools::Schema {
+                itools::Schema::string()
+                    .enum_values(vec![
+                        #(#variants,)*
+                    ])
+            }
+        }
+    };
+
+    expanded.into()
+}
+
+
