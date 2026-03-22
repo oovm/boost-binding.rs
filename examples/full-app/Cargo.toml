@@ -10,4 +10,3 @@ readme.workspace = true
 
 [dependencies]
 itools = { workspace = true }
-itools-macros = { workspace = true }

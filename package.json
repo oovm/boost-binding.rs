@@ -23,7 +23,7 @@
         "build:release": "tsx scripts/build-release.ts",
         "check:ci": "node scripts/check.mjs",
         "check": "node scripts/check.mjs",
-        "typecheck:frontend": "pnpm -r exec tsc --noEmit",
+        "bump": "cargo workspace bump",
         "build:frontend": "pnpm -r run build",
         "u": "cargo upgrade --incompatible",
         "p": "cargo workspace publish --resume"

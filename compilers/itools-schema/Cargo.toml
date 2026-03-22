@@ -1,12 +1,13 @@
 [package]
 name = "itools-schema"
-version = "0.0.0"
-edition = "2021"
+version = "0.0.1"
+edition = { workspace = true }
+authors = { workspace = true }
 description = "ITools Schema definition and construction"
-homepage = "https://itools.dev"
-repository = "https://github.com/itools-dev/itools"
-license = "MIT"
+homepage = { workspace = true }
+repository = "https://github.com/oovm/iTools/tree/dev/compilers/itools-schema"
+license = { workspace = true }
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 

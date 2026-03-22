@@ -4,6 +4,7 @@ members = [
     "compilers/*",
     "examples/hello",
     "examples/interactive",
+    "examples/schema",
 ]
 default-members = [
     "compilers/itools",
@@ -14,7 +15,7 @@ default-members = [
     "compilers/itools-localization",
 ]
 [workspace.package]
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Aster <192607617@qq.com>"]
 edition = "2024"
 license = "Apache-2.0"
@@ -37,16 +38,16 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 lazy_static = "1.5.0"
 
 # iTools dependencies
-itools = { path = "compilers/itools", version = "0.0.0" }
-itools-core = { path = "compilers/itools-core", version = "0.0.0" }
-itools-macros = { path = "compilers/itools-macros", version = "0.0.0" }
-itools-config = { path = "compilers/itools-config", version = "0.0.0" }
-itools-walker = { path = "compilers/itools-walker", version = "0.0.0" }
-itools-localization = { path = "compilers/itools-localization", version = "0.0.0" }
-itools-notify = { path = "compilers/itools-notify", version = "0.0.0" }
-itools-tui = { path = "compilers/itools-tui", version = "0.0.0" }
+itools = { path = "compilers/itools", version = "0.0.1" }
+itools-core = { path = "compilers/itools-core", version = "0.0.1" }
+itools-macros = { path = "compilers/itools-macros", version = "0.0.1" }
+itools-config = { path = "compilers/itools-config", version = "0.0.1" }
+itools-walker = { path = "compilers/itools-walker", version = "0.0.1" }
+itools-localization = { path = "compilers/itools-localization", version = "0.0.1" }
+itools-notify = { path = "compilers/itools-notify", version = "0.0.1" }
+itools-tui = { path = "compilers/itools-tui", version = "0.0.1" }
 
-itools-schema = { path = "compilers/itools-schema", version = "0.0.0" }
+itools-schema = { path = "compilers/itools-schema", version = "0.0.1" }
 
 # Oak parsers
 oak-core = { git = "https://github.com/ygg-lang/oaks.git", branch = "dev", version = "0.0.9" }
