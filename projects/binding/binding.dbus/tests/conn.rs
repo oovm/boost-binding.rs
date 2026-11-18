@@ -48,8 +48,8 @@ impl Drop for Daemon {
 #[test]
 fn hello_list_names_and_unix_user() {
     let daemon = spawn_daemon();
-    let mut bus = SessionBus::connect_to_address(&daemon.address).expect("连接会话总线");
-    let name = bus.hello().expect("Hello");
+    let mut bus = SessionBus::connect_to_address(&daemon.address).unwrap_or_else(|e| panic!("连接会话总线失败: {e}"));
+    let name = bus.hello().unwrap_or_else(|e| panic!("Hello 失败: {e}"));
     assert!(name.starts_with(":1."), "唯一名形状异常: {name}");
 
     let names = bus

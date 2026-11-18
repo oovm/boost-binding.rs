@@ -166,11 +166,13 @@ impl Type {
     /// 该类型在线上要求的对齐字节数。
     pub fn alignment(&self) -> usize {
         match self {
-            Self::Byte | Self::Signature | Self::Variant => 1,
+            Self::Byte | Self::Signature => 1,
             Self::Int16 | Self::UInt16 => 2,
             Self::Boolean | Self::Int32 | Self::UInt32 | Self::Str | Self::ObjectPath => 4,
             Self::Int64 | Self::UInt64 | Self::Double => 8,
             Self::Array(_) | Self::Dict(..) => 4,
+            // 变体自身按 8 参与结构体/数组对齐计算（签名从当前字节位置起写，内层值再按自身类型对齐）。
+            Self::Variant => 8,
             Self::Struct(members) => members.iter().map(Self::alignment).max().unwrap_or(1),
         }
     }
@@ -421,7 +423,8 @@ fn write_array(buf: &mut Vec<u8>, items: &[Value], endian: Endian) {
     pad(buf, 4);
     let len_at = buf.len();
     buf.extend_from_slice(&[0u8; 4]);
-    let align = items.first().map(|v| type_of(v).alignment()).unwrap_or(1);
+    // 空数组的签名按 `type_of` 约定为 `av`，元素对齐与解码侧 `Variant`（8）保持一致。
+    let align = items.first().map(|v| type_of(v).alignment()).unwrap_or(Type::Variant.alignment());
     pad(buf, align);
     let start = buf.len();
     for item in items {
@@ -440,7 +443,8 @@ fn write_dict(buf: &mut Vec<u8>, entries: &[(Value, Value)], endian: Endian) {
     pad(buf, 4);
     let len_at = buf.len();
     buf.extend_from_slice(&[0u8; 4]);
-    let align = entries.first().map(|(key, value)| type_of(key).alignment().max(type_of(value).alignment())).unwrap_or(4);
+    // 空字典的签名按 `type_of` 约定为 `a{sv}`，条目对齐与解码侧 `max(Str, Variant)`（8）保持一致。
+    let align = entries.first().map(|(key, value)| type_of(key).alignment().max(type_of(value).alignment())).unwrap_or(8);
     pad(buf, align);
     let start = buf.len();
     for (key, value) in entries {
