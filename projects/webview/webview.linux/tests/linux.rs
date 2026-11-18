@@ -5,7 +5,7 @@
 
 use std::path::Path;
 
-use webview::WebViewError;
+use webview_types::WebViewError;
 use webview_linux::{Libs, file_url, open_first};
 
 #[test]
