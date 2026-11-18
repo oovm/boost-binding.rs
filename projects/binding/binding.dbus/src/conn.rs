@@ -325,16 +325,18 @@ impl SessionBus {
     }
 
     fn authenticate(&mut self) -> Result<(), ConnError> {
-        // 不发送初始 NUL：那会让服务端先回一行 `REJECTED` 机制列表，污染首个响应读取。
         let uid = self_uid()?;
         let hex: String = uid.to_string().bytes().map(|byte| format!("{byte:02x}")).collect();
-        self.send_line(&format!("AUTH EXTERNAL {}", base64(hex.as_bytes())))?;
+        // 认证规范要求客户端首字节为 NUL（协议版本标识）。它与 `AUTH` 必须合并进同一次写入：
+        // 分两次写会让守护进程在读到一个孤立的 NUL 后立刻回一行 `REJECTED` 机制列表，
+        // 也会在缺少 NUL 时按协议违规直接断开（表现为 `ECONNRESET`）。
+        self.stream.write_all(format!("\0AUTH EXTERNAL {}\r\n", base64(hex.as_bytes())).as_bytes())?;
+        self.stream.flush()?;
         let response = self.read_line()?;
         if !response.starts_with("OK") {
             return Err(ConnError::Auth(format!("AUTH EXTERNAL 被拒绝: {response}")));
         }
-        // 服务端的 `OK` 携带挑战；EXTERNAL 无需应答挑战，但必须回送 `OK` 完成握手后才能 BEGIN。
-        self.send_line("OK")?;
+        // 可选能力：`AGREE_UNIX_FD` 或 `ERROR` 都不影响后续 `BEGIN`。
         self.send_line("NEGOTIATE_UNIX_FD")?;
         let _ = self.read_line()?;
         self.send_line("BEGIN")?;
