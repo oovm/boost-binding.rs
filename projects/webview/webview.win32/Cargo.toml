@@ -9,6 +9,9 @@ readme = "readme.md"
 description = "Win32 + WebView2 后端（非阻塞 pump）"
 publish = false
 
+[dependencies]
+binding-macro = { workspace = true }
+
 [target.'cfg(windows)'.dependencies]
 webview-types = { workspace = true }
 binding-com = { workspace = true }

@@ -9,6 +9,9 @@ readme = "readme.md"
 description = "Linux WebKitGTK 后端（dlopen 运行时绑定）"
 publish = false
 
+[dependencies]
+binding-macro = { workspace = true }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 webview-types = { workspace = true }
 libloading = { workspace = true }

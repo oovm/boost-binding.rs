@@ -7,8 +7,4 @@
 
 #![deny(missing_docs)]
 
-#[cfg(target_os = "linux")]
-mod linux;
-
-#[cfg(target_os = "linux")]
-pub use linux::{Libs, LinuxBackend, file_url, open_first};
+binding_macro::platform_module!(#[cfg(target_os = "linux")] mod linux { Libs, LinuxBackend, file_url, open_first });

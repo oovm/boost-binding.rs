@@ -9,6 +9,9 @@ readme = "readme.md"
 description = "macOS WKWebView 后端"
 publish = false
 
+[dependencies]
+binding-macro = { workspace = true }
+
 [target.'cfg(target_os = "macos")'.dependencies]
 webview-types = { workspace = true }
 objc2 = { workspace = true }

@@ -1,0 +1,10 @@
+[package]
+name = "binding-macro"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "readme.md"
+description = "外部绑定层的编译期样板宏：平台门控模块与公开项 re-export"
+publish = false

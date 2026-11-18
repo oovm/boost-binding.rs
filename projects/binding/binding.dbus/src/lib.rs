@@ -17,5 +17,7 @@
 
 pub mod marshal;
 
-#[cfg(target_os = "linux")]
-pub mod conn;
+binding_macro::platform_module!(
+    #[cfg(target_os = "linux")]
+    pub mod conn;
+);

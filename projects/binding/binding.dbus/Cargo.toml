@@ -10,3 +10,4 @@ description = "D-Bus 协议客户端底座：零依赖线协议编解码（跨�
 publish = false
 
 [dependencies]
+binding-macro = { workspace = true }

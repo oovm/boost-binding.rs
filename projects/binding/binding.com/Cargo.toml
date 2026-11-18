@@ -9,5 +9,8 @@ publish = false
 readme = "readme.md"
 description = "Windows COM 运行时底座：apartment 初始化守卫、HRESULT 错误转换与任务内存回收"
 
+[dependencies]
+binding-macro = { workspace = true }
+
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true }

@@ -7,8 +7,4 @@
 
 #![deny(missing_docs)]
 
-#[cfg(target_os = "macos")]
-mod macos;
-
-#[cfg(target_os = "macos")]
-pub use macos::MacosBackend;
+binding_macro::platform_module!(#[cfg(target_os = "macos")] mod macos { MacosBackend });

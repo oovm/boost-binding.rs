@@ -8,8 +8,4 @@
 
 #![deny(missing_docs)]
 
-#[cfg(windows)]
-mod com;
-
-#[cfg(windows)]
-pub use com::{Apartment, ApartmentState, CoTaskMem, ComError, create_instance};
+binding_macro::platform_module!(#[cfg(windows)] mod com { Apartment, ApartmentState, CoTaskMem, ComError, create_instance });

@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "projects/binding/binding.com",
     "projects/binding/binding.dbus",
+    "projects/binding/binding.macro",
     "projects/webview/webview",
     "projects/webview/webview.types",
     "projects/webview/webview.win32",
@@ -24,6 +25,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 binding-com = { path = "projects/binding/binding.com", version = "0.0.1" }
 binding-dbus = { path = "projects/binding/binding.dbus", version = "0.0.1" }
+binding-macro = { path = "projects/binding/binding.macro", version = "0.0.1" }
 webview = { path = "projects/webview/webview", version = "0.0.1" }
 webview-types = { path = "projects/webview/webview.types", version = "0.0.1" }
 webview-win32 = { path = "projects/webview/webview.win32", version = "0.0.1" }

@@ -15,6 +15,7 @@ Boost 生态的**外部绑定层**：集中承载确有必要的外部库与宿�
 projects/binding/
   binding.com              # Windows COM 运行时底座（Apartment 守卫 / ComError / CoTaskMem 回收）
   binding.dbus             # Linux D-Bus 客户端底座（消息编解码跨平台可测，连接层仅 Linux）
+  binding.macro            # 编译期样板宏（平台门控模块与公开项 re-export）
 projects/webview/
   webview                  # 门面：按编译目标选定后端并导出 WebViewHost / PlatformBackend
   webview.types            # 契约：平台无关类型、WebViewBackend trait 与泛型 WebViewHost<B>

@@ -4,15 +4,15 @@
 
 #![deny(missing_docs)]
 
-#[cfg(windows)]
-mod console;
+binding_macro::platform_module!(
+    #[cfg(windows)]
+    mod console;
+);
 
-/// 宿主 DPI 感知、单位换算与诊断输出工具：供后端、探针示例与验收测试使用。
-#[cfg(windows)]
-pub mod dpi;
+binding_macro::platform_module!(
+    /// 宿主 DPI 感知、单位换算与诊断输出工具：供后端、探针示例与验收测试使用。
+    #[cfg(windows)]
+    pub mod dpi;
+);
 
-#[cfg(windows)]
-mod win32;
-
-#[cfg(windows)]
-pub use win32::Win32Backend;
+binding_macro::platform_module!(#[cfg(windows)] mod win32 { Win32Backend });
