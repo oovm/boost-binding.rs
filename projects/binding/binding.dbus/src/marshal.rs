@@ -291,7 +291,15 @@ pub(crate) fn encode_into(buf: &mut Vec<u8>, value: &Value, endian: Endian) -> T
 }
 
 pub(crate) fn decode_at(ty: &Type, bytes: &[u8], pos: &mut usize, endian: Endian) -> Result<Value, MarshalError> {
-    let mut reader = Reader { bytes, pos: *pos, endian };
+    decode_at_base(ty, bytes, pos, 0, endian)
+}
+
+/// 与 [`decode_at`] 相同，但声明 `bytes` 起点在完整报文中的绝对偏移 `base`。
+///
+/// D-Bus 的填充按报文绝对偏移计算，因此从报文中间截取一段单独解码时必须给出 `base`，
+/// 否则变体内的对齐位置会与真实报文错开。
+pub fn decode_at_base(ty: &Type, bytes: &[u8], pos: &mut usize, base: usize, endian: Endian) -> Result<Value, MarshalError> {
+    let mut reader = Reader { bytes, pos: *pos, endian, base };
     let value = reader.value(ty)?;
     *pos = reader.pos;
     Ok(value)
@@ -464,6 +472,8 @@ struct Reader<'a> {
     bytes: &'a [u8],
     pos: usize,
     endian: Endian,
+    /// `bytes` 起点在完整报文中的绝对偏移；对齐按绝对偏移计算。
+    base: usize,
 }
 
 impl Reader<'_> {
@@ -475,7 +485,7 @@ impl Reader<'_> {
     }
 
     fn skip_pad(&mut self, align: usize) -> Result<(), MarshalError> {
-        let rem = self.pos % align;
+        let rem = (self.base + self.pos) % align;
         if rem != 0 {
             self.take(align - rem)?;
         }

@@ -2,7 +2,7 @@
 //!
 //! 跨平台运行（非 Linux 主机同样验证协议实现）。
 
-use binding_dbus::marshal::{Endian, MarshalError, Signature, Type, Value, decode, encode, parse_types};
+use binding_dbus::marshal::{Endian, MarshalError, Signature, Type, Value, decode, decode_at_base, encode, parse_types};
 
 fn roundtrip(value: Value) {
     let (bytes, signature) = encode(&value);
@@ -82,6 +82,19 @@ fn exact_bytes_dict_sv() {
         ]
     );
     assert_eq!(decode(&signature, &bytes).unwrap(), value);
+}
+
+#[test]
+fn decode_at_base_honours_the_absolute_offset() {
+    // 片段从报文绝对偏移 4 开始，`pos` 4 对应绝对偏移 8，因此 `u64` 不需要再填充。
+    // 若按切片相对偏移对齐（base = 0），解码器会先吃掉 4 字节填充而读错位。
+    let mut bytes = vec![0xAAu8; 4];
+    bytes.extend_from_slice(&42u64.to_le_bytes());
+
+    let mut pos = 4;
+    let value = decode_at_base(&Type::UInt64, &bytes, &mut pos, 4, Endian::Little).unwrap();
+    assert_eq!(value, Value::U64(42));
+    assert_eq!(pos, 12);
 }
 
 #[test]

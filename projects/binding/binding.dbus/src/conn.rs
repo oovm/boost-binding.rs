@@ -250,7 +250,7 @@ impl SessionBus {
 
     /// 读取下一条报文（信号循环入口）。与本次调用无关的报文由 [`SessionBus::call`] 内部跳过。
     pub fn read_message(&mut self) -> Result<Message, ConnError> {
-        let head = self.read_bytes(16)?;
+        let head = self.read_bytes(12)?;
         let endian = Endian::from_marker(head[0])?;
         let kind = MessageKind::from_code(head[1])?;
         let flags = head[2];
@@ -259,11 +259,18 @@ impl SessionBus {
         }
         let body_len = read_u32(&head[4..8], endian) as usize;
         let serial = read_u32(&head[8..12], endian);
-        let fields_len = read_u32(&head[12..16], endian) as usize;
-        let fields_bytes = self.read_bytes(fields_len)?;
+        // 字段区是「变长数组」：4 字节长度 + 对齐填充 + 元素。长度字段在头部内，
+        // 必须与元素区拼回同一段再解码，否则解码器会把元素首字节误读成长度。
+        let fields_len_bytes = self.read_bytes(4)?;
+        let fields_len = read_u32(&fields_len_bytes, endian) as usize;
+        let elements = self.read_bytes(fields_len)?;
+        let mut raw = Vec::with_capacity(4 + fields_len);
+        raw.extend_from_slice(&fields_len_bytes);
+        raw.extend_from_slice(&elements);
+        // 该段在报文中的绝对偏移是 12，对齐必须按绝对偏移计算。
         let mut pos = 0;
-        let fields = marshal::decode_at(&header_fields_type(), &fields_bytes, &mut pos, endian)?;
-        if pos != fields_bytes.len() {
+        let fields = marshal::decode_at_base(&header_fields_type(), &raw, &mut pos, 12, endian)?;
+        if pos != raw.len() {
             return Err(ConnError::Protocol("头部字段数组存在尾部字节".to_owned()));
         }
         let pad = (8 - (16 + fields_len) % 8) % 8;
