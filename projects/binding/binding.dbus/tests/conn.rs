@@ -6,8 +6,7 @@
 
 use binding_dbus::conn::{ConnError, SessionBus, base64, resolve_unix_address, self_uid};
 use binding_dbus::marshal::Value;
-use std::io::BufRead;
-use std::io::BufReader;
+use std::io::{BufRead, BufReader, Read};
 use std::process::{Child, Command, Stdio};
 
 struct Daemon {
@@ -16,16 +15,27 @@ struct Daemon {
 }
 
 fn spawn_daemon() -> Daemon {
+    // 不传 `--disable-syslog`：该选项在新旧 dbus 版本间语义不一，缺省即可；stderr 接管道用于失败诊断。
     let mut child = Command::new("dbus-daemon")
-        .args(["--session", "--print-address", "--disable-syslog"])
+        .args(["--session", "--print-address"])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .spawn()
         .expect("dbus-daemon 必须可用：运行库缺失时测试硬失败，不伪绿");
-    let address =
-        BufReader::new(child.stdout.take().expect("stdout 已接管道")).lines().next().expect("dbus-daemon 应打印总线地址").expect("读取地址行");
-    Daemon { child, address }
+    let mut stderr = child.stderr.take().expect("stderr 已接管道");
+    let stdout = child.stdout.take().expect("stdout 已接管道");
+    let mut noise = Vec::new();
+    for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+        if line.starts_with("unix:") {
+            return Daemon { child, address: line };
+        }
+        noise.push(line);
+    }
+    let mut hint = String::new();
+    let _ = stderr.read_to_string(&mut hint);
+    let status = child.wait().map(|s| s.to_string()).unwrap_or_else(|e| format!("等待失败: {e}"));
+    panic!("dbus-daemon 未打印总线地址（退出状态 {status}）stdout 杂项: {noise:?} stderr: {hint}");
 }
 
 impl Drop for Daemon {
@@ -76,6 +86,6 @@ fn address_parsing() {
 #[test]
 fn base64_matches_sasl_expectation() {
     assert_eq!(base64(b"31303030"), "MzEzMDMwMzA=");
-    assert_eq!(base64(b"3130333132"), "MzEzMDMzMTMyMg==");
+    assert_eq!(base64(b"3130333132"), "MzEzMDMzMzEzMg==");
     assert_eq!(base64(b""), "");
 }
