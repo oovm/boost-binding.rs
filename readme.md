@@ -13,6 +13,7 @@ Boost 生态的**外部绑定层**：集中承载确有必要的外部库与宿�
 
 ```text
 projects/binding/
+  binding                  # 门面：导出 `platform_module!` 并按平台挂上 `com` / `dbus`
   binding.com              # Windows COM 运行时底座（Apartment 守卫 / ComError / CoTaskMem 回收）
   binding.dbus             # Linux D-Bus 客户端底座（消息编解码跨平台可测，连接层仅 Linux）
   binding.macro            # 编译期样板宏（平台门控模块与公开项 re-export）

@@ -1,0 +1,17 @@
+[package]
+name = "binding"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "readme.md"
+description = "外部绑定层门面：按编译目标导出 COM / D-Bus 底座与平台门控宏"
+publish = false
+
+[dependencies]
+binding-macro = { workspace = true }
+binding-dbus = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+binding-com = { workspace = true }
