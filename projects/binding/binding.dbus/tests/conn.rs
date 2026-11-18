@@ -7,28 +7,32 @@
 use binding_dbus::conn::{ConnError, SessionBus, base64, resolve_unix_address, self_uid};
 use binding_dbus::marshal::Value;
 use std::io::{BufRead, BufReader, Read};
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, ChildStderr, ChildStdout, Command, Stdio};
 
 struct Daemon {
     child: Child,
     address: String,
+    /// 管道读取端必须与守护进程同生命周期：提前关闭会让写日志的守护进程收到 SIGPIPE 而中途死亡。
+    _stdout: ChildStdout,
+    _stderr: ChildStderr,
 }
 
 fn spawn_daemon() -> Daemon {
     // 不传 `--disable-syslog`：该选项在新旧 dbus 版本间语义不一，缺省即可；stderr 接管道用于失败诊断。
+    // `--nofork` 让本进程即守护进程，`Drop` 的 `kill` 才能真正回收，不留孤儿。
     let mut child = Command::new("dbus-daemon")
-        .args(["--session", "--print-address"])
+        .args(["--session", "--print-address", "--nofork"])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .expect("dbus-daemon 必须可用：运行库缺失时测试硬失败，不伪绿");
     let mut stderr = child.stderr.take().expect("stderr 已接管道");
-    let stdout = child.stdout.take().expect("stdout 已接管道");
+    let mut reader = BufReader::new(child.stdout.take().expect("stdout 已接管道"));
     let mut noise = Vec::new();
-    for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+    for line in reader.by_ref().lines().map_while(Result::ok) {
         if line.starts_with("unix:") {
-            return Daemon { child, address: line };
+            return Daemon { child, address: line, _stdout: reader.into_inner(), _stderr: stderr };
         }
         noise.push(line);
     }
