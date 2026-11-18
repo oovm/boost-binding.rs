@@ -1,7 +1,7 @@
 //! Linux 会话总线连接层：Unix socket、SASL、方法调用与信号读取。
 //!
 //! 仅 `std::os::unix`，无外部 crate。认证使用 `AUTH EXTERNAL`（uid 取自 `/proc/self/status`
-//! 的 `Uid:` 行，按规范以十进制字符串的十六进制再 base64 编码）。
+//! 的 `Uid:` 行，按规范以十进制字符串逐字节的十六进制承载）。
 //! 报文编解码复用 [`crate::marshal`]，本层只负责收发与头部组装。
 
 use std::fmt;
@@ -326,11 +326,11 @@ impl SessionBus {
 
     fn authenticate(&mut self) -> Result<(), ConnError> {
         let uid = self_uid()?;
-        let hex: String = uid.to_string().bytes().map(|byte| format!("{byte:02x}")).collect();
+        let identity = external_identity(uid);
         // 认证规范要求客户端首字节为 NUL（协议版本标识）。它与 `AUTH` 必须合并进同一次写入：
         // 分两次写会让守护进程在读到一个孤立的 NUL 后立刻回一行 `REJECTED` 机制列表，
         // 也会在缺少 NUL 时按协议违规直接断开（表现为 `ECONNRESET`）。
-        self.stream.write_all(format!("\0AUTH EXTERNAL {}\r\n", base64(hex.as_bytes())).as_bytes())?;
+        self.stream.write_all(format!("\0AUTH EXTERNAL {identity}\r\n").as_bytes())?;
         self.stream.flush()?;
         let response = self.read_line()?;
         if !response.starts_with("OK") {
@@ -499,20 +499,10 @@ pub fn self_uid() -> Result<u32, ConnError> {
     Err(ConnError::Protocol("/proc/self/status 缺少 Uid 行".to_owned()))
 }
 
-const BASE64_ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-/// SASL 握手使用的标准 base64 编码（含 `=` 填充）。
-pub fn base64(data: &[u8]) -> String {
-    let mut out = String::new();
-    for chunk in data.chunks(3) {
-        let b0 = chunk[0];
-        let b1 = chunk.get(1).copied().unwrap_or(0);
-        let b2 = chunk.get(2).copied().unwrap_or(0);
-        let n = (b0 as u32) << 16 | (b1 as u32) << 8 | b2 as u32;
-        out.push(BASE64_ALPHABET[(n >> 18) as usize & 63] as char);
-        out.push(BASE64_ALPHABET[(n >> 12) as usize & 63] as char);
-        out.push(if chunk.len() > 1 { BASE64_ALPHABET[(n >> 6) as usize & 63] as char } else { '=' });
-        out.push(if chunk.len() > 2 { BASE64_ALPHABET[n as usize & 63] as char } else { '=' });
-    }
-    out
+/// `AUTH EXTERNAL` 的 payload：uid 十进制字符串逐字节的十六进制。
+///
+/// D-Bus 的 SASL 用十六进制承载该身份（例如 uid `1000` → `31303030`），
+/// 不是 base64。多包一层编码会被守护进程判为非法 hex。
+pub fn external_identity(uid: u32) -> String {
+    uid.to_string().bytes().map(|byte| format!("{byte:02x}")).collect()
 }

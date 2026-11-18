@@ -1,10 +1,10 @@
-//! `binding-dbus` 会话总线连接层集成测试：真实 `dbus-daemon` 往返、地址解析与 SASL base64。
+//! `binding-dbus` 会话总线连接层集成测试：真实 `dbus-daemon` 往返、地址解析与 SASL 身份编码。
 //!
 //! 连接层与 `dbus-daemon` 均为 Linux-only，非 Linux 目标整个文件不参与编译。
 
 #![cfg(target_os = "linux")]
 
-use binding_dbus::conn::{ConnError, SessionBus, base64, resolve_unix_address, self_uid};
+use binding_dbus::conn::{ConnError, SessionBus, external_identity, resolve_unix_address, self_uid};
 use binding_dbus::marshal::Value;
 use std::io::{BufRead, BufReader, Read};
 use std::process::{Child, ChildStderr, ChildStdout, Command, Stdio};
@@ -88,8 +88,8 @@ fn address_parsing() {
 }
 
 #[test]
-fn base64_matches_sasl_expectation() {
-    assert_eq!(base64(b"31303030"), "MzEzMDMwMzA=");
-    assert_eq!(base64(b"3130333132"), "MzEzMDMzMzEzMg==");
-    assert_eq!(base64(b""), "");
+fn external_identity_matches_sasl_expectation() {
+    assert_eq!(external_identity(1000), "31303030");
+    assert_eq!(external_identity(100122), "313030313232");
+    assert_eq!(external_identity(0), "30");
 }
