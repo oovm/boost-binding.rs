@@ -84,7 +84,7 @@ pub(crate) fn diag(message: impl AsRef<str>) {
 
 /// 进程 DPI 感知现状。
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct Awareness {
+pub struct Awareness {
     /// `SetProcessDpiAwarenessContext(PerMonitorV2)` 是否成功。
     pub requested: bool,
     /// 调用后观察到的感知级别（0 unaware / 1 system / 2 per-monitor）。
@@ -93,7 +93,7 @@ pub(crate) struct Awareness {
 
 impl Awareness {
     /// 稳定名称，用于诊断与验收。
-    pub(crate) fn name(self) -> &'static str {
+    pub fn name(self) -> &'static str {
         match (self.requested, self.observed.0) {
             (true, _) => "per-monitor-v2",
             (false, 2) => "per-monitor-aware",
@@ -104,7 +104,7 @@ impl Awareness {
     }
 
     /// 是否会被 Windows 位图缩放（整片发虚）。
-    pub(crate) fn is_bitmap_scaled(self) -> bool {
+    pub fn is_bitmap_scaled(self) -> bool {
         !self.requested && self.observed.0 < 2
     }
 }
@@ -137,13 +137,13 @@ pub(crate) fn window_dpi(hwnd: HWND) -> u32 {
 }
 
 /// 逻辑像素（DIP，96 DPI 基准）→ 物理像素。
-pub(crate) fn dip_to_physical(value: i32, dpi: u32) -> i32 {
+pub fn dip_to_physical(value: i32, dpi: u32) -> i32 {
     let numerator = i64::from(value) * i64::from(dpi);
     ((numerator + 48) / 96) as i32
 }
 
 /// 物理像素 → 逻辑像素（仅用于诊断输出）。
-pub(crate) fn physical_to_dip(value: i32, dpi: u32) -> f64 {
+pub fn physical_to_dip(value: i32, dpi: u32) -> f64 {
     if dpi == 0 { f64::from(value) } else { f64::from(value) * 96.0 / f64::from(dpi) }
 }
 
@@ -169,41 +169,4 @@ pub(crate) fn primary_work_area() -> Option<RECT> {
         SystemParametersInfoW(SPI_GETWORKAREA, 0, Some(&mut rect as *mut RECT as *mut c_void), SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0))
     };
     ok.ok().map(|()| rect)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn dip_scales_match_windows_display_scales() {
-        // 1100 × 720 DIP 在四档常见缩放下的物理尺寸。
-        assert_eq!(dip_to_physical(1100, 96), 1100);
-        assert_eq!(dip_to_physical(1100, 120), 1375);
-        assert_eq!(dip_to_physical(1100, 144), 1650);
-        assert_eq!(dip_to_physical(1100, 168), 1925);
-        assert_eq!(dip_to_physical(1100, 175), 2005);
-        assert_eq!(dip_to_physical(720, 96), 720);
-        assert_eq!(dip_to_physical(720, 120), 900);
-        assert_eq!(dip_to_physical(720, 144), 1080);
-        assert_eq!(dip_to_physical(720, 168), 1260);
-        assert_eq!(dip_to_physical(720, 175), 1313);
-    }
-
-    #[test]
-    fn physical_to_dip_inverts_scaling() {
-        assert!((physical_to_dip(1650, 144) - 1100.0).abs() < 0.001);
-        assert!((physical_to_dip(1800, 144) - 1200.0).abs() < 0.001);
-    }
-
-    #[test]
-    fn unaware_report_is_bitmap_scaled() {
-        let unaware = Awareness { requested: false, observed: DPI_AWARENESS(0) };
-        assert_eq!(unaware.name(), "unaware");
-        assert!(unaware.is_bitmap_scaled());
-
-        let v2 = Awareness { requested: true, observed: DPI_AWARENESS(2) };
-        assert_eq!(v2.name(), "per-monitor-v2");
-        assert!(!v2.is_bitmap_scaled());
-    }
 }

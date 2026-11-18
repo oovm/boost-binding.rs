@@ -11,4 +11,4 @@
 mod linux;
 
 #[cfg(target_os = "linux")]
-pub use linux::LinuxBackend;
+pub use linux::{Libs, LinuxBackend, file_url, open_first};

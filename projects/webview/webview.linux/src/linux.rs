@@ -61,7 +61,10 @@ struct GtkApi {
     jsc_value_to_string: unsafe extern "C" fn(*mut JscValue) -> *mut c_char,
 }
 
-struct Libs {
+/// 已加载的 GTK3 / WebKitGTK 4.1 / JavaScriptCore 运行库句柄与解析出的函数表。
+///
+/// 公开供集成测试验证符号解析；库句柄先于函数指针声明，保证卸载顺序安全。
+pub struct Libs {
     api: GtkApi,
     // 先于 `api` 声明，保证函数指针存续期间库句柄不先被卸载。
     _gtk: Library,
@@ -70,7 +73,8 @@ struct Libs {
 }
 
 impl Libs {
-    fn load() -> Result<Self> {
+    /// 加载三套运行库并解析全部所需符号；缺库或缺符号时返回结构化错误。
+    pub fn load() -> Result<Self> {
         let gtk = open_first(&["libgtk-3.so.0", "libgtk-3.so"])?;
         let webkit = open_first(&["libwebkit2gtk-4.1.so.0", "libwebkit2gtk-4.1.so"])?;
         let jsc = open_first(&["libjavascriptcoregtk-4.1.so.0", "libjavascriptcoregtk-4.1.so"])?;
@@ -109,7 +113,10 @@ impl Libs {
     }
 }
 
-fn open_first(names: &[&'static str]) -> Result<Library> {
+/// 按白名单依次尝试加载系统动态库；全部失败时返回结构化的 `webkit_dependency_missing`。
+///
+/// 公开供集成测试探测「运行库缺失」的结构化失败路径。
+pub fn open_first(names: &[&'static str]) -> Result<Library> {
     let mut failures = Vec::new();
     for name in names {
         // SAFETY: 只加载本机动态库，路径来自固定白名单。
@@ -390,7 +397,7 @@ impl Drop for LinuxBackend {
 }
 
 /// 把本地路径转成 WebKitGTK 可加载的 `file://` URL（仅保留 RFC 3986 unreserved 与 `/`）。
-fn file_url(path: &Path) -> String {
+pub fn file_url(path: &Path) -> String {
     let text = path.to_string_lossy();
     let mut url = String::from("file://");
     for byte in text.as_bytes() {
@@ -403,38 +410,4 @@ fn file_url(path: &Path) -> String {
         }
     }
     url
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn file_url_encodes_reserved_bytes() {
-        assert_eq!(file_url(Path::new("/tmp/my app/index.html")), "file:///tmp/my%20app/index.html");
-        assert_eq!(file_url(Path::new("/tmp/app/#1.html")), "file:///tmp/app/%231.html");
-    }
-
-    #[test]
-    fn missing_runtime_libraries_report_a_dependency_failure() {
-        let error = match open_first(&["libprobe-missing-runtime.so"]) {
-            Ok(_) => panic!("a missing library must fail"),
-            Err(error) => error,
-        };
-        assert_eq!(error.code(), Some("webkit_dependency_missing"));
-        assert_eq!(error.stage(), Some("load_libraries"));
-        match &error {
-            WebViewError::Host(failure) => {
-                assert!(failure.attempted.iter().any(|entry| entry.contains("libprobe-missing-runtime.so")));
-            }
-            other => panic!("unexpected error: {other}"),
-        }
-    }
-
-    #[test]
-    fn gtk_and_webkit_symbols_resolve() {
-        if let Err(error) = Libs::load() {
-            panic!("所需 GTK3 / WebKitGTK 4.1 运行库不可用: {error}");
-        }
-    }
 }

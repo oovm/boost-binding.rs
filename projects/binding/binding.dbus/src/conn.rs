@@ -458,7 +458,8 @@ fn read_u32(bytes: &[u8], endian: Endian) -> u32 {
     }
 }
 
-fn resolve_unix_address(address: &str) -> Result<SocketAddr, ConnError> {
+/// 解析总线地址中的 unix 传输（`path=` 或 `abstract=` 键）；地址不含 unix 传输或缺少键时返回 [`ConnError::Address`]。
+pub fn resolve_unix_address(address: &str) -> Result<SocketAddr, ConnError> {
     for transport in address.split(';') {
         let Some(rest) = transport.strip_prefix("unix:") else { continue };
         let mut path: Option<String> = None;
@@ -481,7 +482,8 @@ fn resolve_unix_address(address: &str) -> Result<SocketAddr, ConnError> {
     Err(ConnError::Address(format!("地址不含 unix 传输: {address}")))
 }
 
-fn self_uid() -> Result<u32, ConnError> {
+/// 读取 `/proc/self/status` 的 `Uid:` 行，返回当前进程真实 uid（SASL `AUTH EXTERNAL` 凭据来源）。
+pub fn self_uid() -> Result<u32, ConnError> {
     let status = std::fs::read_to_string("/proc/self/status")?;
     for line in status.lines() {
         if let Some(rest) = line.strip_prefix("Uid:")
@@ -495,7 +497,8 @@ fn self_uid() -> Result<u32, ConnError> {
 
 const BASE64_ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-fn base64(data: &[u8]) -> String {
+/// SASL 握手使用的标准 base64 编码（含 `=` 填充）。
+pub fn base64(data: &[u8]) -> String {
     let mut out = String::new();
     for chunk in data.chunks(3) {
         let b0 = chunk[0];
@@ -508,85 +511,4 @@ fn base64(data: &[u8]) -> String {
         out.push(if chunk.len() > 2 { BASE64_ALPHABET[n as usize & 63] as char } else { '=' });
     }
     out
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::io::BufRead;
-    use std::io::BufReader;
-    use std::process::{Child, Command, Stdio};
-
-    struct Daemon {
-        child: Child,
-        address: String,
-    }
-
-    fn spawn_daemon() -> Daemon {
-        let mut child = Command::new("dbus-daemon")
-            .args(["--session", "--print-address", "--disable-syslog"])
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-            .expect("dbus-daemon 必须可用：运行库缺失时测试硬失败，不伪绿");
-        let address = BufReader::new(child.stdout.take().expect("stdout 已接管道"))
-            .lines()
-            .next()
-            .expect("dbus-daemon 应打印总线地址")
-            .expect("读取地址行");
-        Daemon { child, address }
-    }
-
-    impl Drop for Daemon {
-        fn drop(&mut self) {
-            let _ = self.child.kill();
-            let _ = self.child.wait();
-        }
-    }
-
-    #[test]
-    fn hello_list_names_and_unix_user() {
-        let daemon = spawn_daemon();
-        let mut bus = SessionBus::connect_to_address(&daemon.address).expect("连接会话总线");
-        let name = bus.hello().expect("Hello");
-        assert!(name.starts_with(":1."), "唯一名形状异常: {name}");
-
-        let names = bus
-            .call("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "ListNames", &Value::Struct(Vec::new()))
-            .expect("ListNames");
-        let Value::Array(items) = names else { panic!("ListNames 应答应为数组") };
-        assert!(items.iter().any(|item| *item == Value::Str("org.freedesktop.DBus".to_owned())), "ListNames 缺少总线自身: {items:?}");
-
-        let uid_value = bus
-            .call("org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "GetConnectionUnixUser", &Value::Str(name.clone()))
-            .expect("GetConnectionUnixUser");
-        assert_eq!(uid_value, Value::U32(self_uid().expect("读取自身 uid")));
-
-        let features = bus
-            .call(
-                "org.freedesktop.DBus",
-                "/org/freedesktop/DBus",
-                "org.freedesktop.DBus.Properties",
-                "Get",
-                &Value::Struct(vec![Value::Str("org.freedesktop.DBus".to_owned()), Value::Str("Features".to_owned())]),
-            )
-            .expect("Properties.Get");
-        assert!(matches!(features, Value::Variant(_)), "Properties.Get 应答应为 Variant: {features:?}");
-    }
-
-    #[test]
-    fn address_parsing() {
-        assert!(resolve_unix_address("unix:path=/run/user/1000/bus").is_ok());
-        assert!(resolve_unix_address("unix:abstract=/tmp/dbus-x,guid=deadbeef").is_ok());
-        assert!(matches!(resolve_unix_address("tcp:host=localhost"), Err(ConnError::Address(_))));
-        assert!(matches!(resolve_unix_address("unix:guid=abc"), Err(ConnError::Address(_))));
-    }
-
-    #[test]
-    fn base64_matches_sasl_expectation() {
-        assert_eq!(base64(b"31303030"), "MzEzMDMwMzA=");
-        assert_eq!(base64(b"3130333132"), "MzEzMDMzMTMyMg==");
-        assert_eq!(base64(b""), "");
-    }
 }

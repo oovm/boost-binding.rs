@@ -7,8 +7,9 @@
 #[cfg(windows)]
 mod console;
 
+/// 宿主 DPI 感知、单位换算与诊断输出工具：供后端、探针示例与验收测试使用。
 #[cfg(windows)]
-mod dpi;
+pub mod dpi;
 
 #[cfg(windows)]
 mod win32;
