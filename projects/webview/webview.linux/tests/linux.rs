@@ -5,8 +5,8 @@
 
 use std::path::Path;
 
-use webview_types::WebViewError;
 use webview_linux::{Libs, file_url, open_first};
+use webview_types::WebViewError;
 
 #[test]
 fn file_url_encodes_reserved_bytes() {
