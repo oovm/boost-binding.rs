@@ -16,13 +16,17 @@ projects/binding/
   binding.com              # Windows COM 运行时底座（Apartment 守卫 / ComError / CoTaskMem 回收）
   binding.dbus             # Linux D-Bus 客户端底座（消息编解码跨平台可测，连接层仅 Linux）
 projects/webview/
-  webview                  # 平台无关 WebView 宿主合同（OpenOptions / WebViewBackend / WebViewHost / IPC）
+  webview                  # 门面：按编译目标选定后端并导出 WebViewHost / PlatformBackend
+  webview.types            # 契约：平台无关类型、WebViewBackend trait 与泛型 WebViewHost<B>
   webview.win32            # Win32 + WebView2 后端（webview2-com + binding-com，非阻塞 pump）
   webview.macos            # WKWebView 后端（objc2 家族）
   webview.linux            # WebKitGTK 后端（libloading 运行时 dlopen）
 ```
 
-平台无关合同与后端选择由消费者门面完成；本仓 crate 之间只有「后端 → 合同 / 底座」单向依赖。WebView 各 crate 使用中性桥接方言（`window.__webviewReceive`、`__webview_route`、`WEBVIEW_*` 环境变量），不感知任何具体下游产品。
+`webview-types` 只放契约，`webview` 做门面并自动选后端，下游只需要依赖 `webview` 一个 crate，
+不必自己写 `cfg(target_os)` 挑实现。本仓 crate 之间只有「后端 → 契约 / 底座」单向依赖。
+WebView 各 crate 使用中性桥接方言（`window.__webviewReceive`、`__webview_route`、`WEBVIEW_*` 环境变量），
+不感知任何具体下游产品。
 
 ## 开发
 

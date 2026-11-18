@@ -10,7 +10,7 @@ description = "macOS WKWebView 后端"
 publish = false
 
 [target.'cfg(target_os = "macos")'.dependencies]
-webview = { workspace = true }
+webview-types = { workspace = true }
 objc2 = { workspace = true }
 objc2-foundation = { workspace = true }
 objc2-app-kit = { workspace = true }

@@ -18,7 +18,7 @@ fn main() {
         time::{Duration, Instant},
     };
 
-    use webview::{IpcHandler, IpcOutcome, IpcSink, OpenOptions, WebViewBackend};
+    use webview_types::{IpcHandler, IpcOutcome, IpcSink, OpenOptions, WebViewBackend};
     use webview_win32::Win32Backend;
     use windows::Win32::UI::HiDpi::{DPI_AWARENESS_CONTEXT_UNAWARE, SetProcessDpiAwarenessContext};
 

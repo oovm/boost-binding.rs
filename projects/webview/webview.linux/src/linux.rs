@@ -15,7 +15,7 @@ use std::{
 };
 
 use libloading::Library;
-use webview::{
+use webview_types::{
     Capability, IpcHandler, IpcOutcome, IpcSink, MESSAGE_HANDLER_NAME, OpenOptions, Platform, Result, WebViewBackend, WebViewError,
     page_receive_script,
 };

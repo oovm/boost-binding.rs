@@ -10,7 +10,7 @@ description = "Win32 + WebView2 后端（非阻塞 pump）"
 publish = false
 
 [target.'cfg(windows)'.dependencies]
-webview = { workspace = true }
+webview-types = { workspace = true }
 binding-com = { workspace = true }
 windows = { workspace = true }
 webview2-com = { workspace = true }

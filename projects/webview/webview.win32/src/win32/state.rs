@@ -11,7 +11,7 @@ use std::{
     time::Instant,
 };
 
-use webview::{AutomationError, AutomationId, CaptureOutcome, OpenOptions, Result, ScriptOutcome, WebViewError, automation_codes};
+use webview_types::{AutomationError, AutomationId, CaptureOutcome, OpenOptions, Result, ScriptOutcome, WebViewError, automation_codes};
 use webview2_com::{
     CapturePreviewCompletedHandler, ExecuteScriptCompletedHandler,
     Microsoft::Web::WebView2::Win32::{

@@ -14,7 +14,7 @@ use objc2_app_kit::{
 };
 use objc2_foundation::{NSDate, NSDefaultRunLoopMode, NSPoint, NSRect, NSSize, NSString, NSURL, NSURLRequest};
 use objc2_web_kit::{WKScriptMessage, WKScriptMessageHandler, WKUserContentController, WKWebView, WKWebViewConfiguration};
-use webview::{
+use webview_types::{
     Capability, IpcHandler, IpcOutcome, IpcSink, MESSAGE_HANDLER_NAME, OpenOptions, Platform, Result, WebViewBackend, WebViewError,
     page_receive_script,
 };

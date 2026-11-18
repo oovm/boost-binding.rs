@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use webview::{OpenOptions, Result, WebViewError};
+use webview_types::{OpenOptions, Result, WebViewError};
 use webview2_com::{
     AddScriptToExecuteOnDocumentCreatedCompletedHandler,
     Microsoft::Web::WebView2::Win32::{COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_ALLOW, ICoreWebView2, ICoreWebView2_3},

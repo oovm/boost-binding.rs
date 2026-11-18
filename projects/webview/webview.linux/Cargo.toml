@@ -10,5 +10,5 @@ description = "Linux WebKitGTK 后端（dlopen 运行时绑定）"
 publish = false
 
 [target.'cfg(target_os = "linux")'.dependencies]
-webview = { workspace = true }
+webview-types = { workspace = true }
 libloading = { workspace = true }

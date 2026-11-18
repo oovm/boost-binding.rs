@@ -10,7 +10,7 @@ use std::{
     time::Instant,
 };
 
-use webview::{
+use webview_types::{
     AutomationId, CaptureOutcome, DragRect, IpcHandler, IpcOutcome, IpcSink, OpenOptions, Platform, Result, ScriptOutcome, WebViewBackend,
     WebViewError,
 };

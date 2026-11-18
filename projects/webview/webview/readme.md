@@ -1,13 +1,18 @@
 # `webview`
 
-WebView 宿主合同：平台无关的 `OpenOptions` / `IpcOutcome` / `IpcHandler` / `WebViewError`，
-后端 trait `WebViewBackend`，以及泛型宿主 `WebViewHost<B>`。
+WebView 门面：导出 `webview-types` 的平台无关契约，并按编译目标自动选定唯一后端。
 
-平台实现：
+- Windows → `webview-win32`（Win32 + WebView2）
+- macOS → `webview-macos`（WKWebView）
+- Linux → `webview-linux`（WebKitGTK 4.1）
+- 其它目标在编译期显式失败
 
-- `webview-win32`（Win32 + WebView2）
-- `webview-macos`（WKWebView）
-- `webview-linux`（WebKitGTK 4.1）
+下游只需依赖本 crate：
 
-消费者门面（应用框架）按 feature 与编译目标选定后端实例后导出。
-本 crate 不探测运行时环境，也不回退到其它平台实现。
+```rust
+let host = webview::WebViewHost::open(options, Box::new(handler))?;
+```
+
+`webview::WebViewHost` 与 `webview::PlatformBackend` 已是当前目标的实现，
+调用方不需要写 `cfg(target_os)` 自行挑选后端。需要泛型宿主或自定义后端时，
+依赖 `webview-types` 即可。

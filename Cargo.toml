@@ -4,6 +4,7 @@ members = [
     "projects/binding/binding.com",
     "projects/binding/binding.dbus",
     "projects/webview/webview",
+    "projects/webview/webview.types",
     "projects/webview/webview.win32",
     "projects/webview/webview.macos",
     "projects/webview/webview.linux",
@@ -18,13 +19,16 @@ repository = "https://github.com/oovm/boost-binding.rs"
 publish = false
 
 [workspace.dependencies]
-thiserror = "2"
 libloading = "0.9"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 binding-com = { path = "projects/binding/binding.com", version = "0.0.1" }
 binding-dbus = { path = "projects/binding/binding.dbus", version = "0.0.1" }
 webview = { path = "projects/webview/webview", version = "0.0.1" }
+webview-types = { path = "projects/webview/webview.types", version = "0.0.1" }
+webview-win32 = { path = "projects/webview/webview.win32", version = "0.0.1" }
+webview-macos = { path = "projects/webview/webview.macos", version = "0.0.1" }
+webview-linux = { path = "projects/webview/webview.linux", version = "0.0.1" }
 
 # 外部绑定依赖账本（每项均为对应平台系统库的 Rust 绑定，见 readme.md）
 # Windows：WebView2 Loader / COM（系统自带 WebView2 Runtime）

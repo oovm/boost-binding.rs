@@ -2,7 +2,7 @@
 //! 错误形状（capability / platform / code / stage / hresult / attempted）与
 //! 回投脚本转义。
 
-use webview::{
+use webview_types::{
     Capability, IpcHandler, IpcOutcome, IpcSink, OpenOptions, Platform, Result, WebViewBackend, WebViewError, WebViewHost, automation_codes,
     page_receive_script,
 };

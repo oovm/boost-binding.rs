@@ -2,7 +2,7 @@
 
 use std::{ffi::OsStr, os::windows::ffi::OsStrExt};
 
-use webview::WebViewError;
+use webview_types::WebViewError;
 
 pub(crate) fn encode_wide(value: &str) -> Vec<u16> {
     OsStr::new(value).encode_wide().chain(std::iter::once(0)).collect()

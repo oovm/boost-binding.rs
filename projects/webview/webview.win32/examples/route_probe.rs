@@ -8,7 +8,7 @@ fn main() {
         time::{Duration, Instant},
     };
 
-    use webview::{IpcHandler, IpcOutcome, IpcSink, OpenOptions, WebViewBackend};
+    use webview_types::{IpcHandler, IpcOutcome, IpcSink, OpenOptions, WebViewBackend};
     use webview_win32::Win32Backend;
 
     struct Ignore;

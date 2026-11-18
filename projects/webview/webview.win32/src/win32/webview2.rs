@@ -2,7 +2,7 @@
 
 use std::{ffi::c_void, path::Path, sync::mpsc};
 
-use webview::{Result, WebViewError};
+use webview_types::{Result, WebViewError};
 use webview2_com::{
     AcceleratorKeyPressedEventHandler, CoreWebView2EnvironmentOptions, CreateCoreWebView2ControllerCompletedHandler,
     CreateCoreWebView2EnvironmentCompletedHandler,
