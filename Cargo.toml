@@ -1,10 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-    "projects/binding/binding.webview",
-    "projects/binding/binding.webview.win32",
-    "projects/binding/binding.webview.macos",
-    "projects/binding/binding.webview.linux",
+    "projects/binding/binding.com",
+    "projects/binding/binding.dbus",
+    "projects/webview/webview",
+    "projects/webview/webview.win32",
+    "projects/webview/webview.macos",
+    "projects/webview/webview.linux",
 ]
 
 [workspace.package]
@@ -20,7 +22,9 @@ thiserror = "2"
 libloading = "0.9"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-binding-webview = { path = "projects/binding/binding.webview", version = "0.0.1" }
+binding-com = { path = "projects/binding/binding.com", version = "0.0.1" }
+binding-dbus = { path = "projects/binding/binding.dbus", version = "0.0.1" }
+webview = { path = "projects/webview/webview", version = "0.0.1" }
 
 # 外部绑定依赖账本（每项均为对应平台系统库的 Rust 绑定，见 readme.md）
 # Windows：WebView2 Loader / COM（系统自带 WebView2 Runtime）
@@ -58,7 +62,6 @@ objc2-app-kit = { version = "0.3", features = [
 objc2-web-kit = { version = "0.3", features = [
     "WKWebView",
     "WKWebViewConfiguration",
-    "WKUserContentController",
     "WKScriptMessage",
     "WKScriptMessageHandler",
     "WKNavigation",

@@ -1,12 +1,8 @@
 //! macOS WKWebView 实现：`NSWindow` + `WKWebView`，消息通道为
-//! `window.webkit.messageHandlers.wae`，宿主回投调用 `window.__waeReceive`。
+//! `window.webkit.messageHandlers.webview`，宿主回投调用 `window.__webviewReceive`。
 
 use std::sync::mpsc;
 
-use binding_webview::{
-    Capability, IpcHandler, IpcOutcome, IpcSink, MESSAGE_HANDLER_NAME, OpenOptions, Platform, Result, WebViewBackend, WebViewError,
-    page_receive_script,
-};
 use objc2::{
     DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send,
     rc::Retained,
@@ -18,6 +14,10 @@ use objc2_app_kit::{
 };
 use objc2_foundation::{NSDate, NSDefaultRunLoopMode, NSPoint, NSRect, NSSize, NSString, NSURL, NSURLRequest};
 use objc2_web_kit::{WKScriptMessage, WKScriptMessageHandler, WKUserContentController, WKWebView, WKWebViewConfiguration};
+use webview::{
+    Capability, IpcHandler, IpcOutcome, IpcSink, MESSAGE_HANDLER_NAME, OpenOptions, Platform, Result, WebViewBackend, WebViewError,
+    page_receive_script,
+};
 
 /// worker 线程排给主线程的出站动作；`pump()` 在拥有窗口的线程排空。
 enum Outbound {
@@ -165,7 +165,7 @@ impl WebViewBackend for MacosBackend {
             move || tx.send(Outbound::Close).is_ok()
         };
         std::thread::Builder::new()
-            .name("wae-ipc".to_string())
+            .name("webview-ipc".to_string())
             .spawn(move || {
                 let mut handler = handler;
                 for message in inbox_rx.iter() {

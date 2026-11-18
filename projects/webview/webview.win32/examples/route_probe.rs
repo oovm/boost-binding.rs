@@ -8,8 +8,8 @@ fn main() {
         time::{Duration, Instant},
     };
 
-    use binding_webview::{IpcHandler, IpcOutcome, IpcSink, OpenOptions, WebViewBackend};
-    use binding_webview_win32::Win32Backend;
+    use webview::{IpcHandler, IpcOutcome, IpcSink, OpenOptions, WebViewBackend};
+    use webview_win32::Win32Backend;
 
     struct Ignore;
 
@@ -21,7 +21,7 @@ fn main() {
     }
 
     let route = std::env::args().nth(1).unwrap_or_else(|| "/charts".to_string());
-    let page_dir = std::env::temp_dir().join(format!("wae-route-probe-{}", std::process::id()));
+    let page_dir = std::env::temp_dir().join(format!("webview-route-probe-{}", std::process::id()));
     let _ = fs::remove_dir_all(&page_dir);
     fs::create_dir_all(&page_dir).expect("create page dir");
     fs::write(
@@ -31,7 +31,7 @@ fn main() {
     .expect("write index");
 
     unsafe {
-        std::env::set_var("WAE_WEBVIEW_DIAG", "1");
+        std::env::set_var("WEBVIEW_DIAG", "1");
     }
     let url = if route.starts_with("http") { route.clone() } else { format!("https://app.local{route}") };
     let options = OpenOptions::from_url(&url, "route probe");

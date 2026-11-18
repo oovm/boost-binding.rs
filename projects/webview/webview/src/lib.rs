@@ -1,7 +1,7 @@
 //! WebView 宿主绑定合同：平台无关类型、后端 trait 与泛型宿主。
 //!
-//! 平台实现分别在 `binding-webview-win32` / `binding-webview-macos` / `binding-webview-linux`，
-//! 由消费者门面（如 WAE 的 `wae` crate）按 `cfg(target_os)` 选定一个实现并实例化 [`WebViewHost`]。
+//! 平台实现分别在 `webview-win32` / `webview-macos` / `webview-linux`，
+//! 由消费者门面（应用框架）按 `cfg(target_os)` 选定一个实现并实例化 [`WebViewHost`]。
 //! 本 crate 自身不依赖任何平台 crate，也不做运行时后端探测。
 
 #![deny(missing_docs)]
@@ -9,15 +9,15 @@
 use std::{fmt, sync::Arc};
 
 /// macOS / Linux WebKit 后端的消息处理器名：页面侧为
-/// `window.webkit.messageHandlers.wae`。
-pub const MESSAGE_HANDLER_NAME: &str = "wae";
+/// `window.webkit.messageHandlers.webview`。
+pub const MESSAGE_HANDLER_NAME: &str = "webview";
 
-/// 生成宿主 → 页面的回投脚本，调用页面注册的 `window.__waeReceive(text)`。
+/// 生成宿主 → 页面的回投脚本，调用页面注册的 `window.__webviewReceive(text)`。
 ///
 /// Windows 走 WebView2 原生通道，不使用该脚本；macOS / Linux 的 WebKit
 /// 没有等价的反向通道，只能通过 `evaluateJavaScript` 调用页面函数。
 pub fn page_receive_script(text: &str) -> String {
-    format!("if (window.__waeReceive) window.__waeReceive({});", js_string_literal(text))
+    format!("if (window.__webviewReceive) window.__webviewReceive({});", js_string_literal(text))
 }
 
 /// 把任意字符串转成可安全嵌入 JavaScript 的字符串字面量（含 U+2028/U+2029）。
@@ -682,9 +682,9 @@ mod tests {
 
     #[test]
     fn page_receive_script_escapes_js_metacharacters() {
-        assert_eq!(page_receive_script("a\"b"), "if (window.__waeReceive) window.__waeReceive(\"a\\\"b\");");
-        assert_eq!(page_receive_script("line\nline"), "if (window.__waeReceive) window.__waeReceive(\"line\\nline\");");
-        assert_eq!(page_receive_script("a\\b"), "if (window.__waeReceive) window.__waeReceive(\"a\\\\b\");");
+        assert_eq!(page_receive_script("a\"b"), "if (window.__webviewReceive) window.__webviewReceive(\"a\\\"b\");");
+        assert_eq!(page_receive_script("line\nline"), "if (window.__webviewReceive) window.__webviewReceive(\"line\\nline\");");
+        assert_eq!(page_receive_script("a\\b"), "if (window.__webviewReceive) window.__webviewReceive(\"a\\\\b\");");
         assert!(page_receive_script("\u{2028}").contains("\\u2028"));
         assert!(page_receive_script("\u{1}").contains("\\u0001"));
     }

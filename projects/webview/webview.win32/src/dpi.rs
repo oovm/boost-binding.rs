@@ -26,13 +26,13 @@ use windows::Win32::{
 };
 
 /// 诊断开关环境变量：设为 `1`（或 `true`）时把 DPI 观测值打到 stderr。
-pub(crate) const DIAG_ENV: &str = "WAE_WEBVIEW_DIAG";
+pub(crate) const DIAG_ENV: &str = "WEBVIEW_DIAG";
 
 /// 诊断文件日志路径的环境变量。
 ///
 /// GUI 宿主会隐藏系统为它新建的控制台窗口，之后 stderr 不再有人看得见；设置
 /// 该路径后每条宿主日志同时追加到文件。路径由应用决定，宿主只负责写。
-pub(crate) const LOG_FILE_ENV: &str = "WAE_WEBVIEW_LOG_FILE";
+pub(crate) const LOG_FILE_ENV: &str = "WEBVIEW_LOG_FILE";
 
 const DIAG_UNKNOWN: u8 = 0;
 const DIAG_OFF: u8 = 1;
@@ -52,7 +52,7 @@ pub(crate) fn install_log_sink() {
 ///
 /// 文件行带 `ts`（Unix 毫秒），用于把「用户看到的旧行为」与具体启动批次对齐。
 pub(crate) fn emit(message: impl AsRef<str>) {
-    let line = format!("[binding-webview] {}", message.as_ref());
+    let line = format!("[webview] {}", message.as_ref());
     eprintln!("{line}");
     let Some(Some(sink)) = LOG_SINK.get() else {
         return;
@@ -75,7 +75,7 @@ pub(crate) fn diag_enabled() -> bool {
     cached == DIAG_ON
 }
 
-/// 输出一条以 `[binding-webview]` 开头的诊断行（仅在诊断开关打开时）。
+/// 输出一条以 `[webview]` 开头的诊断行（仅在诊断开关打开时）。
 pub(crate) fn diag(message: impl AsRef<str>) {
     if diag_enabled() {
         emit(message);

@@ -1,0 +1,12 @@
+[package]
+name = "binding-dbus"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "readme.md"
+description = "D-Bus 协议客户端底座：零依赖线协议编解码（跨平台）与 Linux 会话总线连接层"
+publish = false
+
+[dependencies]

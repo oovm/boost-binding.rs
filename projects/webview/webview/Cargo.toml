@@ -1,5 +1,5 @@
 [package]
-name = "binding-webview"
+name = "webview"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

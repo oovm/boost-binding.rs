@@ -1,7 +1,7 @@
 //! DPI 证据探针：用真实 Win32/WebView2 后端打开一张可测量的页面。
 //!
 //! 页面在画布上绘制**恰好 1 个设备像素**宽的黑色竖线，并通过 WebView2 消息通道
-//! 回传 `window.devicePixelRatio` 等观测值；宿主侧在 `WAE_WEBVIEW_DIAG=1` 时
+//! 回传 `window.devicePixelRatio` 等观测值；宿主侧在 `WEBVIEW_DIAG=1` 时
 //! 打印窗口 DPI、客户区物理/逻辑尺寸与 controller 边界。
 //!
 //! ```text
@@ -18,15 +18,15 @@ fn main() {
         time::{Duration, Instant},
     };
 
-    use binding_webview::{IpcHandler, IpcOutcome, IpcSink, OpenOptions, WebViewBackend};
-    use binding_webview_win32::Win32Backend;
+    use webview::{IpcHandler, IpcOutcome, IpcSink, OpenOptions, WebViewBackend};
+    use webview_win32::Win32Backend;
     use windows::Win32::UI::HiDpi::{DPI_AWARENESS_CONTEXT_UNAWARE, SetProcessDpiAwarenessContext};
 
     struct PrintHandler;
 
     impl IpcHandler for PrintHandler {
         fn on_ipc(&mut self, message: &str, _sink: &IpcSink) -> IpcOutcome {
-            eprintln!("[wae-dpi-probe] page={message}");
+            eprintln!("[webview-dpi-probe] page={message}");
             IpcOutcome::Ignored
         }
     }
@@ -43,7 +43,7 @@ fn main() {
     }
 
     unsafe {
-        std::env::set_var("WAE_WEBVIEW_DIAG", "1");
+        std::env::set_var("WEBVIEW_DIAG", "1");
     }
     if awareness == "unaware" {
         // 复现修复前状态：先固定为 unaware，后端随后的 Per-Monitor V2 请求会被拒绝。
@@ -52,12 +52,12 @@ fn main() {
         }
     }
 
-    let page_dir = std::env::temp_dir().join(format!("wae-dpi-probe-{}", std::process::id()));
+    let page_dir = std::env::temp_dir().join(format!("webview-dpi-probe-{}", std::process::id()));
     let _ = fs::remove_dir_all(&page_dir);
     fs::create_dir_all(&page_dir).expect("create probe page dir");
     fs::write(page_dir.join("index.html"), PROBE_HTML).expect("write probe page");
 
-    let options = OpenOptions::from_content_dir(page_dir.to_string_lossy().to_string(), "WAE DPI probe");
+    let options = OpenOptions::from_content_dir(page_dir.to_string_lossy().to_string(), "WebView DPI probe");
     let mut backend = Win32Backend::open(options, Box::new(PrintHandler)).expect("open probe window");
 
     let started = Instant::now();
@@ -68,7 +68,7 @@ fn main() {
         std::thread::sleep(Duration::from_millis(10));
     }
     let _ = backend.close();
-    eprintln!("[wae-dpi-probe] done elapsed_ms={}", started.elapsed().as_millis());
+    eprintln!("[webview-dpi-probe] done elapsed_ms={}", started.elapsed().as_millis());
 }
 
 #[cfg(not(windows))]
@@ -80,7 +80,7 @@ fn main() {
 #[cfg(windows)]
 const PROBE_HTML: &str = r#"<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WAE DPI probe</title>
+<title>WebView DPI probe</title>
 <style>html,body{margin:0;padding:0;background:#fff}</style></head>
 <body>
 <canvas id="probe" style="display:block;width:200px;height:120px"></canvas>

@@ -1,16 +1,13 @@
 [package]
-name = "binding-webview-win32"
+name = "binding-com"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-readme = "readme.md"
-description = "Win32 + WebView2 后端（非阻塞 pump）"
 publish = false
+readme = "readme.md"
+description = "Windows COM 运行时底座：apartment 初始化守卫、HRESULT 错误转换与任务内存回收"
 
 [target.'cfg(windows)'.dependencies]
-binding-webview = { workspace = true }
 windows = { workspace = true }
-webview2-com = { workspace = true }
-serde_json = { workspace = true }

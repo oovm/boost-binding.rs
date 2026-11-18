@@ -34,12 +34,10 @@ use webview2_com::{
 };
 use windows::{
     Win32::{
-        Foundation::{
-            E_POINTER, E_UNEXPECTED, ERROR_CLASS_ALREADY_EXISTS, GetLastError, HWND, LPARAM, LRESULT, POINT, RECT, RPC_E_CHANGED_MODE, WPARAM,
-        },
+        Foundation::{E_POINTER, E_UNEXPECTED, ERROR_CLASS_ALREADY_EXISTS, GetLastError, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM},
         Graphics::Gdi::ScreenToClient,
         System::{
-            Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoTaskMemFree, IStream, STGM_CREATE, STGM_WRITE},
+            Com::{CoTaskMemFree, IStream, STGM_CREATE, STGM_WRITE},
             LibraryLoader::GetModuleHandleW,
         },
         UI::{
@@ -59,7 +57,7 @@ use windows::{
     core::{Interface, PCWSTR, PWSTR, w},
 };
 
-use binding_webview::{
+use webview::{
     AutomationError, AutomationId, CaptureOutcome, DragRect, IpcHandler, IpcOutcome, IpcSink, OpenOptions, Platform, Result, ScriptOutcome,
     WebViewBackend, WebViewError, automation_codes,
 };
@@ -70,7 +68,7 @@ type EventRegistrationToken = i64;
 
 const VIRTUAL_HOST: &str = "app.local";
 /// 回退时携带原始路由的查询参数名，由前置脚本在页面脚本运行前消费。
-const SPA_ROUTE_PARAM: &str = "__wae_route";
+const SPA_ROUTE_PARAM: &str = "__webview_route";
 /// 延迟显窗的兜底时限：超过该时长首屏导航仍未完成也先把窗口显示出来，
 /// 避免「进程活着但看不见窗口」；宁可短暂白屏，不要隐形窗口。
 const REVEAL_TIMEOUT: Duration = Duration::from_secs(5);
@@ -334,7 +332,7 @@ impl DesktopState {
 
     /// 打开 WebView2 DevTools（独立窗口）。
     ///
-    /// 可见控制台不再是调试入口：`F12` 与 `WAE_WEBVIEW_DIAG=1` 都经这里打开
+    /// 可见控制台不再是调试入口：`F12` 与 `WEBVIEW_DIAG=1` 都经这里打开
     /// DevTools，页面控制台、网络与 DOM 检查照旧可用。
     fn open_dev_tools(&self, reason: &str) {
         let Some(webview) = self.webview.as_ref() else {
@@ -447,13 +445,13 @@ fn apply_window_icon(hwnd: HWND, content_dir: Option<&str>) {
             Ok(icon) => {
                 let _ = SendMessageW(hwnd, WM_SETICON, Some(WPARAM(ICON_SMALL as usize)), Some(LPARAM(icon.0 as isize)));
             }
-            Err(error) => eprintln!("binding-webview: app.ico small icon load failed: {error}"),
+            Err(error) => eprintln!("webview: app.ico small icon load failed: {error}"),
         }
         match LoadImageW(None, name, IMAGE_ICON, 32, 32, LR_LOADFROMFILE) {
             Ok(icon) => {
                 let _ = SendMessageW(hwnd, WM_SETICON, Some(WPARAM(ICON_BIG as usize)), Some(LPARAM(icon.0 as isize)));
             }
-            Err(error) => eprintln!("binding-webview: app.ico big icon load failed: {error}"),
+            Err(error) => eprintln!("webview: app.ico big icon load failed: {error}"),
         }
     }
 }
@@ -862,7 +860,7 @@ fn attach_spa_fallback(state: *mut DesktopState, webview: &ICoreWebView2) -> Res
     Ok(())
 }
 
-/// 在文档脚本运行前把 `index.html?__wae_route=...` 的地址栏恢复成原始路由。
+/// 在文档脚本运行前把 `index.html?__webview_route=...` 的地址栏恢复成原始路由。
 fn install_spa_bootstrap(webview: &ICoreWebView2, folder: &Path) -> Result<()> {
     let script = encode_wide(&spa_bootstrap_script());
     let handler = AddScriptToExecuteOnDocumentCreatedCompletedHandler::create(Box::new(|_, _| Ok(())));
@@ -1017,14 +1015,20 @@ impl WebViewBackend for Win32Backend {
         let awareness = dpi::ensure_process_dpi_awareness();
 
         unsafe {
-            // S_FALSE（已初始化）与 RPC_E_CHANGED_MODE（已按其它模型初始化）都不是致命错误：
-            // WebView2 需要 STA，若线程已按 MTA 初始化，仍可继续并在 controller 阶段如实报错。
-            let com = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
-            if com.is_err() && com != RPC_E_CHANGED_MODE {
-                return Err(host_failure("com_initialize_failed", "initialize_com", &windows::core::Error::from_hresult(com)));
+            // COM apartment 初始化经 `binding-com` 统一：S_FALSE（同模型已初始化）与
+            // ModeConflict（已按其它模型初始化）都不是致命错误——WebView2 需要 STA，
+            // 若线程已按 MTA 初始化仍可继续，并在 controller 阶段如实报错。
+            // 守卫被 forget：apartment 归属本线程直至进程退出，与消息泵生命周期一致。
+            match binding_com::Apartment::sta() {
+                Ok(apartment) => std::mem::forget(apartment),
+                Err(binding_com::ApartmentState::ModeConflict) => {}
+                Err(binding_com::ApartmentState::Failed(error)) => {
+                    let error = windows::core::Error::from_hresult(error.hresult());
+                    return Err(host_failure("com_initialize_failed", "initialize_com", &error));
+                }
             }
 
-            let class_name = w!("WAE_WEBVIEW_HOST");
+            let class_name = w!("WEBVIEW_HOST");
             let instance = GetModuleHandleW(None).map_err(|e| host_failure("window_class_failed", "load_module", &e))?;
 
             let wc = WNDCLASSW {
@@ -1133,7 +1137,7 @@ impl WebViewBackend for Win32Backend {
                 move || tx.send(Outbound::Close).is_ok()
             };
             std::thread::Builder::new()
-                .name("wae-ipc".to_string())
+                .name("webview-ipc".to_string())
                 .spawn(move || {
                     let mut handler = handler;
                     for message in inbox_rx.iter() {

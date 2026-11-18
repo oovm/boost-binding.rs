@@ -1,5 +1,5 @@
 //! Linux WebKitGTK 4.1 + GTK3 实现：`GtkWindow` + `WebKitWebView`，消息通道为
-//! `window.webkit.messageHandlers.wae`，宿主回投调用 `window.__waeReceive`。
+//! `window.webkit.messageHandlers.webview`，宿主回投调用 `window.__webviewReceive`。
 //!
 //! GTK / WebKit 符号在运行时通过 `libloading` 解析，缺少运行库或符号时返回明确错误。
 
@@ -14,11 +14,11 @@ use std::{
     },
 };
 
-use binding_webview::{
+use libloading::Library;
+use webview::{
     Capability, IpcHandler, IpcOutcome, IpcSink, MESSAGE_HANDLER_NAME, OpenOptions, Platform, Result, WebViewBackend, WebViewError,
     page_receive_script,
 };
-use libloading::Library;
 
 type GtkWidget = c_void;
 type WebKitWebView = c_void;
@@ -254,7 +254,7 @@ impl WebViewBackend for LinuxBackend {
                 return Err(WebViewError::Message("WebKitGTK 注册消息处理器失败".into()));
             }
 
-            let signal = c"script-message-received::wae";
+            let signal = Self::cstring(&format!("script-message-received::{MESSAGE_HANDLER_NAME}"), "信号名")?;
             (libs.api.g_signal_connect_data)(manager.cast(), signal.as_ptr(), on_script_message as *mut c_void, shared_raw, None, 0);
             (libs.api.g_signal_connect_data)(window.cast(), c"destroy".as_ptr(), on_destroy as *mut c_void, shared_raw, None, 0);
 
@@ -288,7 +288,7 @@ impl WebViewBackend for LinuxBackend {
             move || tx.send(Outbound::Close).is_ok()
         };
         std::thread::Builder::new()
-            .name("wae-ipc".to_string())
+            .name("webview-ipc".to_string())
             .spawn(move || {
                 let mut handler = handler;
                 for message in inbox_rx.iter() {
@@ -411,13 +411,13 @@ mod tests {
 
     #[test]
     fn file_url_encodes_reserved_bytes() {
-        assert_eq!(file_url(Path::new("/tmp/wae app/index.html")), "file:///tmp/wae%20app/index.html");
-        assert_eq!(file_url(Path::new("/tmp/wae/#1.html")), "file:///tmp/wae/%231.html");
+        assert_eq!(file_url(Path::new("/tmp/my app/index.html")), "file:///tmp/my%20app/index.html");
+        assert_eq!(file_url(Path::new("/tmp/app/#1.html")), "file:///tmp/app/%231.html");
     }
 
     #[test]
     fn missing_runtime_libraries_report_a_dependency_failure() {
-        let error = match open_first(&["libwae-missing-runtime-probe.so"]) {
+        let error = match open_first(&["libprobe-missing-runtime.so"]) {
             Ok(_) => panic!("a missing library must fail"),
             Err(error) => error,
         };
@@ -425,7 +425,7 @@ mod tests {
         assert_eq!(error.stage(), Some("load_libraries"));
         match &error {
             WebViewError::Host(failure) => {
-                assert!(failure.attempted.iter().any(|entry| entry.contains("libwae-missing-runtime-probe.so")));
+                assert!(failure.attempted.iter().any(|entry| entry.contains("libprobe-missing-runtime.so")));
             }
             other => panic!("unexpected error: {other}"),
         }

@@ -1,9 +1,9 @@
-# `binding-webview-linux`
+# `webview-linux`
 
-Linux `WebKitGTK 4.1` + `GTK3` 后端，实现 `binding-webview` 的 `WebViewBackend`（`LinuxBackend`）。
+Linux `WebKitGTK 4.1` + `GTK3` 后端，实现 `webview` 的 `WebViewBackend`（`LinuxBackend`）。
 
 能力面：`GtkWindow` + `WebKitWebView` 窗口、`content_dir`（本地文件 URL）/ `url` 加载、
-`window.webkit.messageHandlers.wae` 入站消息、`window.__waeReceive` 出站回投、
+`window.webkit.messageHandlers.webview` 入站消息、`window.__webviewReceive` 出站回投、
 `gtk_main_iteration_do` 驱动的非阻塞 `pump`、关闭。
 
 GTK / WebKit 通过 `libloading` 在运行时解析：缺少 `libgtk-3`、`libwebkit2gtk-4.1` 或
